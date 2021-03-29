@@ -8,7 +8,7 @@ The name refers to the tool used by ranchers to catch stray livestock and guide 
 
 ## Example initiatives
 
-Repo Lasso uses the term **initiative** to describe a change or set of changes across multiple repositories that addresses a specific issue or goal. The desired end result of an initiative is to open a series of detailed, focused, and nearly-identical pull requests against the affected repositories.
+Repo Lasso uses the term *initiative* to describe a change or set of changes across multiple repositories that addresses a specific issue or goal. The desired end result of an initiative is to open a series of detailed, focused, and nearly-identical pull requests against the affected repositories.
 
 Here are some groups of pull requests I've created with this tool, to demonstrate the types of initiatives that Repo Lasso handles well:
 
@@ -34,6 +34,10 @@ You'll need to have these items installed:
 - Python 3 (virtualenv optional)
 
 You'll also need a GitHub account, and a [personal access token](https://github.com/settings/tokens) associated with that account. The token needs only the `public_repo` scope enabled.
+
+I also recommend generating an SSH key on the device you plan to use Repo Lasso on, and [putting that SSH key on GitHub](https://github.com/settings/keys).
+
+Repo Lasso has been tested on macOS and Ubuntu, but should work on other platforms as well.
 
 ### Installation
 
