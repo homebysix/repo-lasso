@@ -199,13 +199,7 @@ Here's an example of a markdown file that results (rendered by [Marked 2](https:
 
 - There is a `./RepoLasso.py status` subcommand that will show you the current branch/change status of all your clones.
 
-- Careful submitting pull requests on initiatives that enact similar changes across the same files. Some changes can cause merge conflicts.
-
-- Open all repos in GitHub Desktop.
-
-- Recovering from unstaged changes.
-
-- Making adjacent changes.
+- Careful submitting pull requests on initiatives that enact similar changes across the same files, because you might create merge conflicts.
 
 ## Getting help
 
