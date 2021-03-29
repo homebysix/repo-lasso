@@ -79,7 +79,7 @@ def build_argument_parser():
         "status",
         help="get branch and clean/dirty status of current cached clones",
     )
-    status_parser.set_defaults(func=status)
+    status_parser.set_defaults(func=status)  # noqa: F821
 
     sync_parser = subparsers.add_parser(
         "sync",
@@ -87,28 +87,28 @@ def build_argument_parser():
         "GitHub API, create forks of all eligible repos, and "
         "clone the forks locally",
     )
-    sync_parser.set_defaults(func=sync)
+    sync_parser.set_defaults(func=sync)  # noqa: F821
 
     branch_parser = subparsers.add_parser(
         "branch",
         help="create a new branch or switch to an existing branch on all clones",
     )
     branch_parser.add_argument("name", help="branch name")
-    branch_parser.set_defaults(func=branch)
+    branch_parser.set_defaults(func=branch)  # noqa: F821
 
     commit_parser = subparsers.add_parser(
         "commit",
         help="create a new commit on the current branch across all clones",
     )
     commit_parser.add_argument("message", help="commit message")
-    commit_parser.set_defaults(func=commit)
+    commit_parser.set_defaults(func=commit)  # noqa: F821
 
     pr_parser = subparsers.add_parser(
         "pr",
         help="push new commits to the origin and open pull requests for any "
         "clones with changes",
     )
-    pr_parser.set_defaults(func=pr)
+    pr_parser.set_defaults(func=pr)  # noqa: F821
     pr_parser.add_argument(
         "--template",
         action="store",
@@ -121,7 +121,7 @@ def build_argument_parser():
         "default branch, and fetch/pull latest changes from "
         "GitHub in preparation for creating a new initiative",
     )
-    reset_parser.set_defaults(func=reset)
+    reset_parser.set_defaults(func=reset)  # noqa: F821
 
     report_parser = subparsers.add_parser(
         "report",
@@ -129,7 +129,7 @@ def build_argument_parser():
         "including whether submitted pull requests have been "
         "merged",
     )
-    report_parser.set_defaults(func=report)
+    report_parser.set_defaults(func=report)  # noqa: F821
 
     return parser
 

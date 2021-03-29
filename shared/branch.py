@@ -18,15 +18,7 @@
 import os
 import subprocess
 
-from . import (
-    INTVDIR,
-    REPODIR,
-    colors,
-    cprint,
-    get_branch_info,
-    get_clones,
-    get_index_info,
-)
+from . import INTVDIR, colors, cprint, get_branch_info, get_clones, get_index_info
 
 
 def create_branch(branch_name, config, clones):

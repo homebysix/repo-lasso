@@ -15,14 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 import subprocess
-import json
 from datetime import datetime
 
 from github import Github, GithubException
 
-from . import INTVDIR, REPODIR, colors, cprint, get_clones
+from . import INTVDIR, colors, cprint, get_clones
 
 
 def load_pr_template(template_path, args):

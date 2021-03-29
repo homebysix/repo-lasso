@@ -15,12 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from github import Github
-import os
 import json
+import os
 from datetime import datetime
 
-from . import colors, cprint, get_org_repos, INTVDIR
+from . import INTVDIR, colors, cprint, get_org_repos
 
 
 def main(args, config):

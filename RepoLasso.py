@@ -41,21 +41,12 @@ from time import time
 
 from shared import (
     CONFIG_PATH,
-    REPODIR,
     __version__,
-    branch,
     build_argument_parser,
     colors,
-    commit,
     cprint,
     get_config,
-    pr,
     readable_time,
-    report,
-    reset,
-    status,
-    sync,
-    trim_leading_org,
 )
 
 

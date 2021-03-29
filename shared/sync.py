@@ -133,7 +133,7 @@ def sync_clones(clones, config, args):
 
     for idx, clone in enumerate(clones):
         cprint(
-            "Processing clone %s (%d of %d)..."
+            "Syncing clone %s (%d of %d)..."
             % (os.path.relpath(clone), idx + 1, len(clones)),
             colors.OKBLUE,
         )
