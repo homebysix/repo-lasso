@@ -1,0 +1,6 @@
+.DS_Store
+*.pyc
+*.json
+initiatives/
+repos/
+tests/test_config.json
