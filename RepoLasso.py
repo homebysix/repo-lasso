@@ -39,14 +39,21 @@ from distutils.version import LooseVersion
 from textwrap import dedent
 from time import time
 
-from shared import (
+from shared import (  # noqa: F401
     CONFIG_PATH,
     __version__,
+    branch,
     build_argument_parser,
     colors,
+    commit,
     cprint,
     get_config,
+    pr,
     readable_time,
+    report,
+    reset,
+    status,
+    sync,
 )
 
 
