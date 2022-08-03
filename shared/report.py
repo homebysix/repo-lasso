@@ -97,3 +97,5 @@ def main(args, config):
                     outfile.write(json.dumps(intv_data, indent=4))
                 with open(intv_md, "w") as outfile:
                     outfile.write(md_data)
+
+        cprint("Wrote report: %s" % os.path.relpath(intv_md), colors.OKGREEN)
