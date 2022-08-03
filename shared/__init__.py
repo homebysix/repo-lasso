@@ -96,6 +96,19 @@ def build_argument_parser():
     branch_parser.add_argument("name", help="branch name")
     branch_parser.set_defaults(func=branch)  # noqa: F821
 
+    check_parser = subparsers.add_parser(
+        "check",
+        help="check changes on the current branch and store their results",
+    )
+    check_parser.add_argument("script", help="script used to check changes")
+    check_parser.add_argument(
+        "--tries", default=1, help="number of times to try script per check"
+    )
+    check_parser.add_argument(
+        "--revert", action="store_true", help="revert changes if checks fail"
+    )
+    check_parser.set_defaults(func=check)  # noqa: F821
+
     commit_parser = subparsers.add_parser(
         "commit",
         help="create a new commit on the current branch across all clones",

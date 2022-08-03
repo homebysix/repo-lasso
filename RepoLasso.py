@@ -44,6 +44,7 @@ from shared import (  # noqa: F401
     __version__,
     branch,
     build_argument_parser,
+    check,
     colors,
     commit,
     cprint,
