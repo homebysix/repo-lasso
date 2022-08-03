@@ -19,6 +19,7 @@ import json
 import os
 import subprocess
 from datetime import datetime
+from time import sleep
 
 from github import Github, GithubException
 
@@ -66,13 +67,27 @@ def open_pull_request(clone, base, head, args, config):
             body=body,
         )
         cprint("Pull request opened: %s" % pr.html_url, colors.OKGREEN, 2)
-    except GithubException:
-        cprint(
-            "WARNING: Unable to open pull request. "
-            "A PR may already exist for this branch.",
-            colors.WARNING,
-            2,
-        )
+    except GithubException as err:
+        if err.status == 403:
+            cprint(
+                "WARNING: Rate limited. Waiting 60 seconds before continuing.",
+                colors.WARNING,
+                2,
+            )
+            sleep(60)
+        elif err.status == 422:
+            cprint(
+                "WARNING: A pull request may already exist for this branch. Skipping.",
+                colors.WARNING,
+                2,
+            )
+        else:
+            cprint(
+                "WARNING: Unable to open pull request. Details: %s - %s"
+                % (err.status, err.data),
+                colors.WARNING,
+                2,
+            )
         pr = None
 
     return pr
