@@ -205,6 +205,10 @@ Here's an example of a markdown file that results (rendered by [Marked 2](https:
 
 - Careful submitting pull requests on initiatives that enact similar changes across the same files, because you might create merge conflicts.
 
+- Here's a one-liner that can add all repos to GitHub Desktop, if you desire:
+
+        find repos -depth 2 -type d -exec open -a "GitHub Desktop" "{}" '+'
+
 ## Getting help
 
 For help using Repo Lasso, first refer to the built-in help:
