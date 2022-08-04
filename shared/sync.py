@@ -18,6 +18,7 @@
 import os
 import subprocess
 import sys
+from multiprocessing.pool import ThreadPool
 
 from github import Github
 from github.GithubException import GithubException
@@ -128,41 +129,36 @@ def create_clones(forks_to_clone, config):
                 pass
 
 
-def sync_clones(clones, config, args):
-    """Fetch and pull clones from upstream, and push commits to origin."""
+def sync_clone(clone, config, args, idx, total):
+    """Fetch and pull a clone from upstream, and push commits to origin."""
 
-    for idx, clone in enumerate(clones):
-        cprint(
-            "Syncing clone %s (%d of %d)..."
-            % (os.path.relpath(clone), idx + 1, len(clones)),
-            colors.OKBLUE,
-        )
-        # TODO: Determine this based on GitHub API.
-        branches_cmd = ["git", "-C", clone, "branch"]
-        proc = subprocess.run(branches_cmd, check=True, capture_output=True, text=True)
-        branches = [x.strip() for x in proc.stdout.replace("*", "").split("\n")]
-        default_branch = "main" if "main" in branches else "master"
-        curr_branch_cmd = ["git", "-C", clone, "branch", "--show-current"]
-        proc = subprocess.run(
-            curr_branch_cmd, check=True, capture_output=True, text=True
-        )
-        current_branch = proc.stdout.strip()
+    cprint(
+        "Syncing clone %s (%s of %s)..." % (os.path.relpath(clone), idx, total),
+        colors.OKBLUE,
+    )
+    # TODO: Determine this based on GitHub API.
+    branches_cmd = ["git", "-C", clone, "branch"]
+    proc = subprocess.run(branches_cmd, check=True, capture_output=True, text=True)
+    branches = [x.strip() for x in proc.stdout.replace("*", "").split("\n")]
+    default_branch = "main" if "main" in branches else "master"
+    curr_branch_cmd = ["git", "-C", clone, "branch", "--show-current"]
+    proc = subprocess.run(curr_branch_cmd, check=True, capture_output=True, text=True)
+    current_branch = proc.stdout.strip()
 
-        fetch_cmd = ["git", "-C", clone, "fetch", "--all"]
-        _ = subprocess.run(fetch_cmd, check=True, capture_output=args.verbose == 0)
-        if current_branch in ("main", "master"):
-            pull_cmd = [
-                "git",
-                "-C",
-                clone,
-                "pull",
-                "--ff-only",
-                "upstream",
-                default_branch,
-            ]
-            _ = subprocess.run(pull_cmd, check=True, capture_output=args.verbose == 0)
-            push_cmd = ["git", "-C", clone, "push", "origin"]
-            _ = subprocess.run(push_cmd, check=True, capture_output=args.verbose == 0)
+    fetch_cmd = ["git", "-C", clone, "fetch", "--all"]
+    _ = subprocess.run(fetch_cmd, check=True, capture_output=args.verbose == 0)
+    if current_branch in ("main", "master"):
+        pull_cmd = ["git", "-C", clone, "pull", "--ff-only", "upstream", default_branch]
+        _ = subprocess.run(pull_cmd, check=True, capture_output=args.verbose == 0)
+        push_cmd = ["git", "-C", clone, "push", "origin"]
+        _ = subprocess.run(push_cmd, check=True, capture_output=args.verbose == 0)
+
+
+def parallelize(args):
+    """Helper function that allows us to compact needed arguments and pass them
+    to the sync_clone() function."""
+
+    return sync_clone(*args)
 
 
 def main(args, config):
@@ -198,4 +194,15 @@ def main(args, config):
         create_clones(missing_clones, config)
 
     print("Syncing clones (fetch/pull from upstream, push to origin)...")
-    sync_clones(clones, config, args)
+    # TODO: Offer --serial flag for running syncs one at a time.
+    # for idx, clone in enumerate(clones)
+    #     sync_clone(clones, config, args, idx + 1, len(clones))
+    number_of_workers = 48
+    with ThreadPool(number_of_workers) as pool:
+        pool.map(
+            parallelize,
+            [
+                (clone, config, args, idx + 1, len(clones))
+                for idx, clone in enumerate(clones)
+            ],
+        )
