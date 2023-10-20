@@ -19,6 +19,7 @@ import json
 import os
 import subprocess
 import sys
+from multiprocessing.pool import ThreadPool
 
 from . import INTVDIR, colors, cprint, get_clones
 
@@ -46,6 +47,76 @@ def summarize(checks):
     print("\n%d files failed checks across %d clones." % (f_err, c_err))
 
 
+def check_repo(clone, args, idx, total):
+    """Checks a single repository."""
+
+    clone = os.path.relpath(clone)
+    print("Looking for changes in clone %s (%d of %d)..." % (clone, idx + 1, total))
+
+    # Skip to next clone if no changes on this branch
+    status_cmd = [
+        "git",
+        "-C",
+        clone,
+        "status",
+        "--short",
+        "--porcelain",
+    ]
+    proc = subprocess.run(status_cmd, check=True, capture_output=True, text=True)
+    if not proc.stdout:
+        return (0, 0)
+
+    c_files = [x[2:].strip() for x in proc.stdout.strip().split("\n")]
+    result = {}
+
+    for fidx, c_file in enumerate(c_files):
+        print(
+            "Checking changed file %s (%d of %d)..." % (c_file, fidx + 1, len(c_files))
+        )
+
+        # Test on current git HEAD, without uncommitted changes
+        stash_cmd = ["git", "-C", clone, "stash"]
+        proc = subprocess.run(stash_cmd, check=True, capture_output=True, text=True)
+        checks_before = []
+        for i in range(0, args.tries):
+            proc = subprocess.run(
+                [args.script, os.path.relpath(clone), c_file, str(i)],
+                check=False,
+                capture_output=True,
+            )
+            checks_before.append(proc.returncode)
+
+        # Reapply changes and test again
+        stash_cmd = ["git", "-C", clone, "stash", "pop"]
+        proc = subprocess.run(stash_cmd, check=True, capture_output=True, text=True)
+        checks_after = []
+        for i in range(0, args.tries):
+            proc = subprocess.run(
+                [args.script, os.path.relpath(clone), c_file, str(i)],
+                check=False,
+                capture_output=True,
+            )
+            checks_after.append(proc.returncode)
+
+        # Save return codes
+        result[c_file] = (checks_before, checks_after)
+        if checks_before != checks_after:
+            cprint(
+                "%s return codes differ before/after changes for file %s/%s"
+                % (args.script, clone, c_file),
+                colors.WARNING,
+            )
+
+    return result
+
+
+def parallelize(args):
+    """Helper function that allows us to compact needed arguments and pass them
+    to the check_repo() function."""
+
+    return check_repo(*args)
+
+
 def main(args, config):
     """Main function for check verb."""
     cprint("\nCHECK", colors.OKBLUE)
@@ -55,7 +126,7 @@ def main(args, config):
         sys.exit(1)
 
     try:
-        tries = int(args.tries)
+        int(args.tries)
     except:
         cprint("Number of tries must be an integer: %s" % args.script, colors.FAIL)
         sys.exit(1)
@@ -73,78 +144,17 @@ def main(args, config):
     # exit(0)
 
     clones = get_clones(config)
-    checks = {}
-    for idx, clone in enumerate(clones):
-        clone = os.path.relpath(clone)
-        print(
-            "Looking for changes in clone %s (%d of %d)..."
-            % (clone, idx + 1, len(clones))
-        )
+    results = {}
 
-        # Skip to next clone if no changes on this branch
-        status_cmd = [
-            "git",
-            "-C",
-            clone,
-            "status",
-            "--short",
-            "--porcelain",
-        ]
-        proc = subprocess.run(status_cmd, check=True, capture_output=True, text=True)
-        if not proc.stdout:
-            continue
-
-        c_files = [x[2:].strip() for x in proc.stdout.strip().split("\n")]
-        checks[clone] = {}
-
-        # Trap Control-C and display summary before exit.
-        try:
-            for fidx, c_file in enumerate(c_files):
-                print(
-                    "Checking changed file %s (%d of %d)..."
-                    % (c_file, fidx + 1, len(c_files))
-                )
-
-                # Test on current git HEAD, without uncommitted changes
-                stash_cmd = ["git", "-C", clone, "stash"]
-                proc = subprocess.run(
-                    stash_cmd, check=True, capture_output=True, text=True
-                )
-                checks_before = []
-                for i in range(0, tries):
-                    proc = subprocess.run(
-                        [args.script, os.path.relpath(clone), c_file, str(i)],
-                        check=False,
-                        capture_output=True,
-                    )
-                    checks_before.append(proc.returncode)
-
-                # Reapply changes and test again
-                stash_cmd = ["git", "-C", clone, "stash", "pop"]
-                proc = subprocess.run(
-                    stash_cmd, check=True, capture_output=True, text=True
-                )
-                checks_after = []
-                for i in range(0, tries):
-                    proc = subprocess.run(
-                        [args.script, os.path.relpath(clone), c_file, str(i)],
-                        check=False,
-                        capture_output=True,
-                    )
-                    checks_after.append(proc.returncode)
-
-                # Save return codes
-                checks[clone][c_file] = (checks_before, checks_after)
-                if checks_before != checks_after:
-                    cprint(
-                        "%s return codes differ before/after changes for file %s/%s"
-                        % (args.script, clone, c_file),
-                        colors.WARNING,
-                    )
-                with open(results_file, "w") as openfile:
-                    openfile.write(json.dumps(checks, indent=4))
-        except KeyboardInterrupt:
-            summarize(checks)
-            sys.exit(0)
-
-    summarize(checks)
+    # Trap Control-C and display summary before exit.
+    try:
+        number_of_workers = os.cpu_count()
+        with ThreadPool(number_of_workers) as pool:
+            results = pool.map(
+                parallelize,
+                [(clone, args, idx, len(clones)) for idx, clone in enumerate(clones)],
+            )
+    finally:
+        summarize(results)
+        with open(results_file, "w") as openfile:
+            openfile.write(json.dumps(results, indent=4))
