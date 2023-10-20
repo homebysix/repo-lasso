@@ -67,6 +67,12 @@ def create_user_forks(repos_to_fork, config):
     )
     if not response.lower().startswith("y"):
         cprint("Did not consent to fork repos. Exiting.", colors.WARNING)
+        cprint(
+            "TIP: You can set the `--excluded-repo` CLI parameter or the "
+            "`excluded_repos` key in your config file to ignore specific "
+            "repos in an organization. See `--help` for usage information.",
+            colors.OKGREEN,
+        )
         sys.exit(0)
     for idx, repo in enumerate(repos_to_fork):
         print(
@@ -101,6 +107,12 @@ def create_clones(forks_to_clone, config):
     response = input("OK to create clones? [y/n] ")
     if not response.lower().startswith("y"):
         cprint("Did not consent to clone forks. Exiting.", colors.WARNING)
+        cprint(
+            "TIP: You can set the `--excluded-repo` CLI parameter or the "
+            "`excluded_repos` key in your config file to ignore specific "
+            "repos in an organization. See `--help` for usage information.",
+            colors.OKGREEN,
+        )
         sys.exit(0)
     for idx, fork in enumerate(forks_to_clone):
         print(
