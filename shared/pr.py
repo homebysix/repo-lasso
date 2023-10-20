@@ -67,6 +67,8 @@ def open_pull_request(clone, base, head, args, config):
             body=body,
         )
         cprint("Pull request opened: %s" % pr.html_url, colors.OKGREEN, 2)
+        # Proactively avoid rate limiting
+        sleep(3)
     except GithubException as err:
         if err.status == 403:
             cprint(
@@ -74,6 +76,7 @@ def open_pull_request(clone, base, head, args, config):
                 colors.WARNING,
                 2,
             )
+            cprint(g.get_rate_limit(), colors.WARNING, 2)
             sleep(60)
         elif err.status == 422:
             cprint(

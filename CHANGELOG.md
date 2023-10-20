@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file. This projec
 - New `check` verb that runs a script of your choosing on changed files in all repos, optionally reverting the changes if the script exits non-zero.
 - Sync operations now happen in parallel, making the process much faster.
 - Provide hint about the `--excluded-repo` option if fork/clone consent not provided for new repos.
+- Try to slow down operations if GitHub rate limiting is detected.
 
 ### Changed
 
