@@ -35,9 +35,10 @@ For more information and usage walkthrough, see the README.
 """
 
 import sys
-from distutils.version import LooseVersion
 from textwrap import dedent
 from time import time
+
+from packaging.version import Version
 
 from shared import (  # noqa: F401
     CONFIG_PATH,
@@ -83,7 +84,7 @@ def main():
            """
     cprint(dedent(logo), colors.HEADER)
 
-    if LooseVersion(__version__) < LooseVersion("1.0.0"):
+    if Version(__version__) < Version("1.0.0"):
         cprint(
             "WARNING: RepoLasso is still experimental. Verify all changes "
             "manually before submitting pull requests in bulk.\n",
