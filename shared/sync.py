@@ -105,7 +105,8 @@ def create_clones(forks_to_clone, config):
         sys.exit(0)
     for idx, fork in enumerate(forks_to_clone):
         print(
-            f"Cloning fork of {config['github_org']}/{fork.name} ({idx + 1} of {len(forks_to_clone)})..."
+            f"Cloning fork of {config['github_org']}/{fork.name} "
+            f"({idx + 1} of {len(forks_to_clone)})..."
         )
         clone_path = os.path.join(REPODIR, config["github_org"], fork.name)
         clone_cmd = ["git", "clone", "--depth=1", fork.ssh_url, clone_path]
