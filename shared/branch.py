@@ -20,7 +20,7 @@ import subprocess
 from . import INTVDIR, colors, cprint, get_branch_info, get_clones, get_index_info
 
 
-def create_branch(branch_name, config, clones):
+def create_branch(branch_name, clones):
     print(f"Creating branch {branch_name}...")
     for idx, clone in enumerate(clones):
         print(
@@ -61,7 +61,7 @@ def main(args, config):
     changes = get_index_info(clones)
     if all(x in ("master", "main") for x in branches):
         # Create new branch from default branch.
-        create_branch(branch_name, config, clones)
+        create_branch(branch_name, clones)
     elif list(branches.keys()) == [branch_name] and not changes.get("dirty"):
         # No need to create new branch. Waiting for changes to be made.
         print(f"All clones are already on the {branch_name} branch.")
@@ -74,7 +74,7 @@ def main(args, config):
             f"WARNING: Additional changes may already exist on the {curr_branch} branch.",
             colors.WARNING,
         )
-        create_branch(branch_name, config, clones)
+        create_branch(branch_name, clones)
     else:
         cprint("ERROR: Clones are not all on the same branch.", colors.FAIL)
         cprint(
