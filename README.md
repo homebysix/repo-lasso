@@ -69,7 +69,8 @@ In order to do its work, Repo Lasso needs to know a few things like your GitHub 
             "github_org": "example_org"
         }
 
-**NOTE**: You don't need to be an administrator in the GitHub organization, or even a maintainer. Repo Lasso will create a fork of your own that will be used as the basis for pull requests.
+> [!NOTE]
+> You don't need to be an administrator in the GitHub organization, or even a maintainer. Repo Lasso will create a fork of your own that will be used as the basis for pull requests.
 
 ## Define your goal
 
@@ -113,7 +114,8 @@ The sync command may take some time, especially if there are many repos in the t
 
 As the sync command runs, feedback will be shown on the status of forks and clones. You'll be prompted to confirm before any forks are created or cloned locally.
 
-**NOTE:** If you already have forks of any of the target organization's repositories in your GitHub account, and if those forks are out of date, you may want to update them before proceeding further. You can find instructions for that in [GitHub's documentation](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork).
+> [!NOTE]
+> If you already have forks of any of the target organization's repositories in your GitHub account, and if those forks are out of date, you may want to update them before proceeding further. You can find instructions for that in [GitHub's documentation](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork).
 
 ### 2. Create a branch
 
@@ -139,7 +141,8 @@ Whatever method you choose to enact the needed changes, Repo Lasso will handle t
 
 After making your desired changes, but before committing them, test the changes in whatever manner makes most sense.
 
-**NOTE:** If any of the repositories you're managing have [pre-commit](https://pre-commit.com/) hooks configured, these hooks will run automatically on modified files during the commit process.
+> [!NOTE]
+> If any of the repositories you're managing have [pre-commit](https://pre-commit.com/) hooks configured, these hooks will run automatically on modified files during the commit process.
 
 <!-- For information about testing AutoPkg recipes, see the [AutoPkg-specific tricks](#autopkg-specific-tricks) section below. -->
 
@@ -155,7 +158,8 @@ This will create a new commit on the current branch across all your clones simul
 
 You can repeat the change/test/commit process as many times as needed until all your changes are done.
 
-**NOTE:** All new/modified/deleted file changes are included in each commit.
+> [!NOTE]
+> All new/modified/deleted file changes are included in each commit.
 
 ### 6. Open pull requests
 
@@ -169,7 +173,8 @@ Once your PR template is saved, run this command to open your pull requests:
 ./RepoLasso.py pr
 ```
 
-**NOTE**: Pull requests will only be created for repositories in which changes were made/committed. Any unchanged repos will be skipped.
+> [!NOTE]
+> Pull requests will only be created for repositories in which changes were made/committed. Any unchanged repos will be skipped.
 
 ### 7. Reset and re-sync the clones
 
