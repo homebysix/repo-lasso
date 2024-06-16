@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file. This projec
 - Started creating unit tests for Repo Lasso internal functions.
 - Provide hint about the `--excluded-repo` option if fork/clone consent not provided for new repos.
 - Try to slow down pull request creation if GitHub rate limiting is detected.
+- Link to Repo Lasso and version number now included in pull request template.
 
 ### Changed
 

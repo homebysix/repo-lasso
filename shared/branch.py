@@ -17,7 +17,15 @@
 import os
 import subprocess
 
-from . import INTVDIR, colors, cprint, get_branch_info, get_clones, get_index_info
+from . import (
+    INTVDIR,
+    __version__,
+    colors,
+    cprint,
+    get_branch_info,
+    get_clones,
+    get_index_info,
+)
 
 
 def create_branch(branch_name, clones):
@@ -44,7 +52,9 @@ def create_branch(branch_name, clones):
         with open(pr_template, "w", encoding="utf-8") as outfile:
             outfile.write(
                 f"# {branch_name}\n\n"
-                "Description of changes included in this pull request.\n"
+                "(DESCRIPTION OF CHANGES IN THIS PULL REQUEST)\n\n"
+                "Thanks for considering!\n\nThis PR was submitted using "
+                f"[Repo Lasso](https://github.com/homebysix/repo-lasso) v{__version__}.\n"
             )
 
 
