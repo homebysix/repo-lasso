@@ -33,7 +33,7 @@ def main(args, config):
 
     print("Checking clone branch status...")
     branches = get_branch_info(clones)
-    if all((x in ("master", "main") for x in branches)):
+    if all(x in ("master", "main") for x in branches):
         cprint("All clones are on the default branch.", colors.OKBLUE)
     elif len(branches) == 1:
         cprint(

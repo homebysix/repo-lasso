@@ -64,7 +64,7 @@ def main(args, config):
     clones = get_clones(config)
     branches = get_branch_info(clones)
     changes = get_index_info(clones)
-    if all((x in ("master", "main") for x in branches)):
+    if all(x in ("master", "main") for x in branches):
         # Create new branch from default branch.
         create_branch(branch_name, config, clones)
     elif list(branches.keys()) == [branch_name] and not changes.get("dirty"):
