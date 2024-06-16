@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file. This projec
 
 <!-- markdownlint-disable MD024 -->
 
-## Unreleased
+## [Unreleased]
+
+Nothing yet.
+
+## [1.1.0] - 2024-06-16
 
 ### Added
 
@@ -22,3 +26,6 @@ All notable changes to this project will be documented in this file. This projec
 ## 1.0.0 - 2021-03-29
 
 - Initial public release of Repo Lasso.
+
+[Unreleased]: https://github.com/homebysix/repo-lasso/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/homebysix/repo-lasso/compare/v1.0.0...v1.1.0
