@@ -139,7 +139,7 @@ Whatever method you choose to enact the needed changes, Repo Lasso will handle t
 
 ### 4. Test the changes
 
-After making your desired changes, but before committing them, test the changes in whatever manner makes most sense.
+After making your desired changes, but before committing them, test the changes in whatever manner makes most sense. (Repo Lasso offers a convenient way to do this using the `check` verb. Run `./RepoLasso.py check -h` for usage details.)
 
 > [!NOTE]
 > If any of the repositories you're managing have [pre-commit](https://pre-commit.com/) hooks configured, these hooks will run automatically on modified files during the commit process.
