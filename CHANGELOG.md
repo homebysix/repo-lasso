@@ -22,6 +22,7 @@ Nothing yet.
 ### Changed
 
 - More specific error output when pull requests fail.
+- Various Python upgrades, linting fixes, and standardizations for long term maintainability.
 
 ## 1.0.0 - 2021-03-29
 
