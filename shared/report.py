@@ -81,9 +81,9 @@ def main(args, config):
                 else:
                     status = "🔵 open"
                 md_data += f"\n| [{repo.full_name}#{repo_pr.number}]({repo_pr.html_url}) | {repo_pr.created_at} | {status} |"
-                with open(intv_path, "w") as outfile:
+                with open(intv_path, "w", encoding="utf-8") as outfile:
                     outfile.write(json.dumps(intv_data, indent=4))
-                with open(intv_md, "w") as outfile:
+                with open(intv_md, "w", encoding="utf-8") as outfile:
                     outfile.write(md_data)
 
         cprint(f"Wrote report: {os.path.relpath(intv_md)}", colors.OKGREEN)

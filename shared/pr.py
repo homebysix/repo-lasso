@@ -28,7 +28,7 @@ from . import INTVDIR, colors, cprint, get_clones
 def load_pr_template(template_path, args):
     """Given a path to a markdown file, load the file as a pull request template."""
 
-    with open(template_path, "r") as infile:
+    with open(template_path, encoding="utf-8") as infile:
         template_contents = infile.read()
     if template_contents.startswith("# "):
         title = template_contents.split("\n")[0].lstrip("# ").strip()
@@ -118,7 +118,7 @@ def log_initiative(pr, branch, config):
                 "pull_requests": [pr.html_url],
             }
         }
-    with open(intv_path, "w") as outfile:
+    with open(intv_path, "w", encoding="utf-8") as outfile:
         outfile.write(json.dumps(intv_data, indent=4))
 
 

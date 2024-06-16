@@ -41,7 +41,7 @@ def create_branch(branch_name, config, clones):
     if not os.path.isdir(INTVDIR):
         os.mkdir(INTVDIR)
     if not os.path.isfile(pr_template):
-        with open(pr_template, "w") as outfile:
+        with open(pr_template, "w", encoding="utf-8") as outfile:
             outfile.write(
                 f"# {branch_name}\n\n"
                 "Description of changes included in this pull request.\n"

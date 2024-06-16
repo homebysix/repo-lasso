@@ -197,7 +197,7 @@ def get_config(path, args):
         print(f"A GitHub personal access token was found at {autopkg_token}")
         response = input("Do you want to use this token? [y/n] ")
         if response.lower().startswith("y"):
-            with open(autopkg_token, "r") as infile:
+            with open(autopkg_token, encoding="utf-8") as infile:
                 config["github_token"] = infile.read().strip()
     # If no stored GitHub tokens, prompt for one
     if not config.get("github_token"):
@@ -233,7 +233,7 @@ def get_config(path, args):
         print(f"Excluded repos (from config): {config['excluded_repos']}")
 
     # Save updated config
-    with open(path, "w") as outfile:
+    with open(path, "w", encoding="utf-8") as outfile:
         outfile.write(json.dumps(config, indent=4))
 
     return config
