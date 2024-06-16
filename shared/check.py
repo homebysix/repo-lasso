@@ -23,22 +23,22 @@ from multiprocessing.pool import ThreadPool
 from . import INTVDIR, colors, cprint, get_clones
 
 
-def summarize(checks):
+def summarize(results):
     """Print summary of check results."""
     c_err = 0
     f_err = 0
-    for clone, c_results in checks.items():
+    for clone, c_results in results.items():
         printed_clone = False
         for filepath, f_results in c_results.items():
-            if f_results[0] != f_results[1]:
+            if f_results["before"] != f_results["after"]:
                 if not printed_clone:
                     print(clone)
                     printed_clone = True
                     c_err += 1
-                print("  %s/%s" % (clone, filepath))
+                print(f"  {clone}/{filepath}")
                 cprint(
                     "    Exit codes before: %s / Exit codes after: %s"
-                    % (f_results[0], f_results[1]),
+                    % (f_results["before"], f_results["after"]),
                     colors.WARNING,
                 )
                 f_err += 1
@@ -50,7 +50,9 @@ def check_repo(clone, args, idx, total):
     """Checks a single repository."""
 
     clone = os.path.relpath(clone)
-    print("Looking for changes in clone %s (%d of %d)..." % (clone, idx + 1, total))
+    print(
+        "Looking for changes in clone %s (%d of %d repos)..." % (clone, idx + 1, total)
+    )
 
     # Skip to next clone if no changes on this branch
     status_cmd = [
@@ -63,21 +65,22 @@ def check_repo(clone, args, idx, total):
     ]
     proc = subprocess.run(status_cmd, check=True, capture_output=True, text=True)
     if not proc.stdout:
-        return (0, 0)
+        return
 
     c_files = [x[2:].strip() for x in proc.stdout.strip().split("\n")]
     result = {}
 
     for fidx, c_file in enumerate(c_files):
         print(
-            "Checking changed file %s (%d of %d)..." % (c_file, fidx + 1, len(c_files))
+            "Checking %s (%d of %d files in %s)..."
+            % (c_file, fidx + 1, len(c_files), clone)
         )
 
         # Test on current git HEAD, without uncommitted changes
         stash_cmd = ["git", "-C", clone, "stash"]
         proc = subprocess.run(stash_cmd, check=True, capture_output=True, text=True)
         checks_before = []
-        for i in range(0, args.tries):
+        for i in range(0, int(args.tries)):
             proc = subprocess.run(
                 [args.script, os.path.relpath(clone), c_file, str(i)],
                 check=False,
@@ -89,7 +92,7 @@ def check_repo(clone, args, idx, total):
         stash_cmd = ["git", "-C", clone, "stash", "pop"]
         proc = subprocess.run(stash_cmd, check=True, capture_output=True, text=True)
         checks_after = []
-        for i in range(0, args.tries):
+        for i in range(0, int(args.tries)):
             proc = subprocess.run(
                 [args.script, os.path.relpath(clone), c_file, str(i)],
                 check=False,
@@ -97,16 +100,20 @@ def check_repo(clone, args, idx, total):
             )
             checks_after.append(proc.returncode)
 
-        # Save return codes
-        result[c_file] = (checks_before, checks_after)
+        # Save return codes)
+        result[c_file] = {"before": checks_before, "after": checks_after}
         if checks_before != checks_after:
             cprint(
                 "%s return codes differ before/after changes for file %s/%s"
                 % (args.script, clone, c_file),
                 colors.WARNING,
             )
+            if args.revert:
+                # Revert changes to this file
+                revert_cmd = ["git", "-C", clone, "checkout", c_file]
+                proc = subprocess.run(revert_cmd, check=False)
 
-    return result
+    return {clone: result}
 
 
 def parallelize(args):
@@ -126,7 +133,7 @@ def main(args, config):
 
     try:
         int(args.tries)
-    except:
+    except ValueError:
         cprint("Number of tries must be an integer: %s" % args.script, colors.FAIL)
         sys.exit(1)
 
@@ -140,7 +147,7 @@ def main(args, config):
     #     with open(results_file, "rb") as openfile:
     #         checks = json.load(openfile)
     #     summarize(checks)
-    # exit(0)
+    #     exit(0)
 
     clones = get_clones(config)
     results = {}
@@ -149,11 +156,20 @@ def main(args, config):
     try:
         number_of_workers = os.cpu_count()
         with ThreadPool(number_of_workers) as pool:
-            results = pool.map(
+            result_list = pool.map(
                 parallelize,
                 [(clone, args, idx, len(clones)) for idx, clone in enumerate(clones)],
             )
+        results = {}
+        for result in result_list:
+            if result is None:
+                continue
+            for clone, c_results in result.items():
+                if clone not in results:
+                    results[clone] = {}
+                for filepath, f_results in c_results.items():
+                    results[clone][filepath] = f_results
     finally:
-        summarize(results)
-        with open(results_file, "w") as openfile:
+        with open(results_file, "w", encoding="utf-8") as openfile:
             openfile.write(json.dumps(results, indent=4))
+        summarize(results)
