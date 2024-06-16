@@ -52,7 +52,7 @@ def get_user_forks(org_repos, config):
 def create_user_forks(repos_to_fork, config):
     """Create forks for any repos not already forked from org."""
 
-    print("Need to create forks for the following %d repos:" % len(repos_to_fork))
+    print(f"Need to create forks for the following {len(repos_to_fork)} repos:")
     print("  - " + "\n  - ".join([x.full_name for x in repos_to_fork]))
     response = input(
         f"OK to create forks in the {config['github_username']} GitHub account? [y/n] "
@@ -83,7 +83,7 @@ def create_user_forks(repos_to_fork, config):
 def create_clones(forks_to_clone, config):
     """Create clones for any forks not already cloned locally."""
 
-    print("Need to create clones for the following %d repos:" % len(forks_to_clone))
+    print(f"Need to create clones for the following {len(forks_to_clone)} repos:")
     print(
         "  - "
         + "\n  - ".join(

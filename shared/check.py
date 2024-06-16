@@ -43,7 +43,7 @@ def summarize(results):
                 )
                 f_err += 1
 
-    print("\n%d files failed checks across %d clones." % (f_err, c_err))
+    print(f"\n{f_err} files failed checks across {c_err} clones.")
 
 
 def check_repo(clone, args, idx, total):

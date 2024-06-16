@@ -56,6 +56,6 @@ def main(args, config):
         cprint("All clones are clean.", colors.OKBLUE)
     else:
         cprint("WARNING: Some clones have uncommitted changes.", colors.WARNING)
-        print("These %d repos have uncommitted changes:" % len(changes["dirty"]))
+        print(f"These {len(changes['dirty'])} repos have uncommitted changes:")
         for repo in changes["dirty"]:
             print(bullet + os.path.relpath(repo))

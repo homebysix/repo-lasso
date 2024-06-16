@@ -290,8 +290,8 @@ def get_org_repos(config, args):
     org_repos = g.get_organization(config["github_org"]).get_repos(type="sources")
     if org_repos.totalCount > 99:
         cprint(
-            "WARNING: There are %d repositories in this organization. "
-            "This may take a while." % org_repos.totalCount,
+            f"WARNING: There are {org_repos.totalCount} repositories in this organization. "
+            "This may take a while.",
             colors.WARNING,
         )
     repos = []
