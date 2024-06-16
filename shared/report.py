@@ -80,7 +80,10 @@ def main(args, config):
                     status = "⛔️ conflict"
                 else:
                     status = "🔵 open"
-                md_data += f"\n| [{repo.full_name}#{repo_pr.number}]({repo_pr.html_url}) | {repo_pr.created_at} | {status} |"
+                md_data += (
+                    f"\n| [{repo.full_name}#{repo_pr.number}]({repo_pr.html_url})"
+                    f" | {repo_pr.created_at} | {status} |"
+                )
                 with open(intv_path, "w", encoding="utf-8") as outfile:
                     outfile.write(json.dumps(intv_data, indent=4))
                 with open(intv_md, "w", encoding="utf-8") as outfile:
