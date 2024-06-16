@@ -288,7 +288,6 @@ def get_org_repos(config, args):
         enable_console_debug_logging()
 
     org_repos = g.get_organization(config["github_org"]).get_repos(type="sources")
-    org_repos
     if org_repos.totalCount > 99:
         cprint(
             "WARNING: There are %d repositories in this organization. "
