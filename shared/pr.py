@@ -25,7 +25,7 @@ from github import Github, GithubException
 from . import INTVDIR, colors, cprint, get_clones
 
 
-def load_pr_template(template_path, args):
+def load_pr_template(template_path):
     """Given a path to a markdown file, load the file as a pull request template."""
 
     with open(template_path, encoding="utf-8") as infile:
@@ -47,10 +47,10 @@ def open_pull_request(clone, base, head, args, config):
     default_pr_template = os.path.join(INTVDIR, head + ".md")
     if args.template and os.path.isfile(args.template):
         print("  Loaded template from CLI options.")
-        title, body = load_pr_template(args.template, args)
+        title, body = load_pr_template(args.template)
     elif os.path.isfile(default_pr_template):
         print("  Loaded template from default path.")
-        title, body = load_pr_template(default_pr_template, args)
+        title, body = load_pr_template(default_pr_template)
     else:
         print("  No template found.")
         title = head
