@@ -27,12 +27,7 @@ def main(args, config):
     clones = get_clones(config)
     for idx, clone in enumerate(clones):
         print(
-            "Adding and committing in clone %s (%d of %d)..."
-            % (
-                os.path.relpath(clone),
-                idx + 1,
-                len(clones),
-            )
+            f"Adding and committing in clone {os.path.relpath(clone)} ({idx + 1} of {len(clones)})..."
         )
         add_cmd = ["git", "-C", clone, "add", "--all"]
         _ = subprocess.run(add_cmd, check=False, capture_output=True)

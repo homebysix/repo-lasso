@@ -42,14 +42,8 @@ def get_user_forks(org_repos, config):
     f_noun = "fork" if len(user_forks) == 1 else "forks"
     r_noun = "repo" if len(org_repos) == 1 else "repos"
     print(
-        "%d %s of %s %s by user %s."
-        % (
-            len(user_forks),
-            f_noun,
-            config["github_org"],
-            r_noun,
-            config["github_username"],
-        )
+        f"{len(user_forks)} {f_noun} of {config['github_org']} "
+        f"{r_noun} by user {config['github_username']}."
     )
 
     return user_forks
@@ -61,8 +55,7 @@ def create_user_forks(repos_to_fork, config):
     print("Need to create forks for the following %d repos:" % len(repos_to_fork))
     print("  - " + "\n  - ".join([x.full_name for x in repos_to_fork]))
     response = input(
-        "OK to create forks in the %s GitHub account? [y/n] "
-        % config["github_username"]
+        f"OK to create forks in the {config['github_username']} GitHub account? [y/n] "
     )
     if not response.lower().startswith("y"):
         cprint("Did not consent to fork repos. Exiting.", colors.WARNING)
@@ -74,16 +67,13 @@ def create_user_forks(repos_to_fork, config):
         )
         sys.exit(0)
     for idx, repo in enumerate(repos_to_fork):
-        print(
-            "Forking repo %s (%d of %d)..."
-            % (repo.full_name, idx + 1, len(repos_to_fork))
-        )
+        print(f"Forking repo {repo.full_name} ({idx + 1} of {len(repos_to_fork)})...")
         try:
             yield repo.create_fork()
         except GithubException as err:
             cprint(
-                "Attempt to fork repo %s failed. Create the fork manually on GitHub, then try again: %s"
-                % (repo.full_name, repo.html_url),
+                f"Attempt to fork repo {repo.full_name} failed. "
+                f"Create the fork manually on GitHub, then try again: {repo.html_url}",
                 colors.WARNING,
                 2,
             )
@@ -98,7 +88,7 @@ def create_clones(forks_to_clone, config):
         "  - "
         + "\n  - ".join(
             [
-                "%s (fork of %s/%s)" % (x.full_name, config["github_org"], x.name)
+                f"{x.full_name} (fork of {config['github_org']}/{x.name})"
                 for x in forks_to_clone
             ]
         )
@@ -115,8 +105,7 @@ def create_clones(forks_to_clone, config):
         sys.exit(0)
     for idx, fork in enumerate(forks_to_clone):
         print(
-            "Cloning fork of %s/%s (%d of %d)..."
-            % (config["github_org"], fork.name, idx + 1, len(forks_to_clone))
+            f"Cloning fork of {config['github_org']}/{fork.name} ({idx + 1} of {len(forks_to_clone)})..."
         )
         clone_path = os.path.join(REPODIR, config["github_org"], fork.name)
         clone_cmd = ["git", "clone", "--depth=1", fork.ssh_url, clone_path]
@@ -144,7 +133,7 @@ def sync_clone(clone, config, args, idx, total):
     """Fetch and pull a clone from upstream, and push commits to origin."""
 
     cprint(
-        "Syncing clone %s (%s of %s)..." % (os.path.relpath(clone), idx, total),
+        f"Syncing clone {os.path.relpath(clone)} ({idx} of {total})...",
         colors.OKBLUE,
     )
     # TODO: Determine this based on GitHub API.
@@ -178,15 +167,15 @@ def main(args, config):
     cprint("\nSYNC", colors.OKBLUE)
 
     print(
-        "Retrieving information about %s org repos "
-        "(this should take a few seconds)..." % config["github_org"]
+        f"Retrieving information about {config['github_org']} org repos "
+        "(this should take a few seconds)..."
     )
     repos = get_org_repos(config, args)
-    print("%d eligible repos in %s org." % (len(repos), config["github_org"]))
+    print(f"{len(repos)} eligible repos in {config['github_org']} org.")
 
     print(
-        "Retrieving information about your forks of the %s org repos "
-        "(this may take a bit longer)..." % config["github_org"]
+        f"Retrieving information about your forks of the {config['github_org']} org repos "
+        "(this may take a bit longer)..."
     )
     forks = get_user_forks(repos, config)
     missing_forks = [

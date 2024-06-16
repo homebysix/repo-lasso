@@ -61,11 +61,11 @@ def open_pull_request(clone, base, head, args, config):
     try:
         pr = upstream_repo.create_pull(
             base=base,
-            head="%s:%s" % (g.get_user().login, head),
+            head=f"{g.get_user().login}:{head}",
             title=title,
             body=body,
         )
-        cprint("Pull request opened: %s" % pr.html_url, colors.OKGREEN, 2)
+        cprint(f"Pull request opened: {pr.html_url}", colors.OKGREEN, 2)
         # Proactively avoid rate limiting
         sleep(3)
     except GithubException as err:
@@ -85,8 +85,7 @@ def open_pull_request(clone, base, head, args, config):
             )
         else:
             cprint(
-                "WARNING: Unable to open pull request. Details: %s - %s"
-                % (err.status, err.data),
+                f"WARNING: Unable to open pull request. Details: {err.status} - {err.data}",
                 colors.WARNING,
                 2,
             )
@@ -130,8 +129,8 @@ def main(args, config):
     clones = get_clones(config)
     for idx, clone in enumerate(clones):
         print(
-            "Evaluating pull request eligibility for %s (%d of %d)..."
-            % (os.path.relpath(clone), idx + 1, len(clones))
+            "Evaluating pull request eligibility for "
+            f"{os.path.relpath(clone)} ({idx + 1} of {len(clones)})..."
         )
 
         # TODO: Determine this based on GitHub API.
@@ -151,7 +150,7 @@ def main(args, config):
             "-C",
             clone,
             "log",
-            "%s..%s" % (default_branch, current_branch),
+            f"{default_branch}..{current_branch}",
             "--oneline",
         ]
         proc = subprocess.run(status_cmd, check=True, capture_output=True, text=True)

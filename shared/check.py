@@ -37,8 +37,8 @@ def summarize(results):
                     c_err += 1
                 print(f"  {clone}/{filepath}")
                 cprint(
-                    "    Exit codes before: %s / Exit codes after: %s"
-                    % (f_results["before"], f_results["after"]),
+                    f"    Exit codes before: {f_results['before']}"
+                    f" / Exit codes after: {f_results['after']}",
                     colors.WARNING,
                 )
                 f_err += 1
@@ -50,9 +50,7 @@ def check_repo(clone, args, idx, total):
     """Checks a single repository."""
 
     clone = os.path.relpath(clone)
-    print(
-        "Looking for changes in clone %s (%d of %d repos)..." % (clone, idx + 1, total)
-    )
+    print(f"Looking for changes in clone {clone} ({idx + 1} of {total} repos)...")
 
     # Skip to next clone if no changes on this branch
     status_cmd = [
@@ -71,10 +69,7 @@ def check_repo(clone, args, idx, total):
     result = {}
 
     for fidx, c_file in enumerate(c_files):
-        print(
-            "Checking %s (%d of %d files in %s)..."
-            % (c_file, fidx + 1, len(c_files), clone)
-        )
+        print(f"Checking {c_file} ({fidx + 1} of {len(c_files)} files in {clone})...")
 
         # Test on current git HEAD, without uncommitted changes
         stash_cmd = ["git", "-C", clone, "stash"]
@@ -104,8 +99,7 @@ def check_repo(clone, args, idx, total):
         result[c_file] = {"before": checks_before, "after": checks_after}
         if checks_before != checks_after:
             cprint(
-                "%s return codes differ before/after changes for file %s/%s"
-                % (args.script, clone, c_file),
+                f"{args.script} return codes differ before/after changes for file {clone}/{c_file}",
                 colors.WARNING,
             )
             if args.revert:
@@ -128,13 +122,13 @@ def main(args, config):
     cprint("\nCHECK", colors.OKBLUE)
 
     if not os.path.isfile(args.script):
-        cprint("The check script does not exist: %s" % args.script, colors.FAIL)
+        cprint(f"The check script does not exist: {args.script}", colors.FAIL)
         sys.exit(1)
 
     try:
         int(args.tries)
     except ValueError:
-        cprint("Number of tries must be an integer: %s" % args.script, colors.FAIL)
+        cprint(f"Number of tries must be an integer: {args.script}", colors.FAIL)
         sys.exit(1)
 
     # Create JSON file for storing check results.

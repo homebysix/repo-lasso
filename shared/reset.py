@@ -27,10 +27,7 @@ def main(args, config):
 
     clones = get_clones(config)
     for idx, clone in enumerate(clones):
-        print(
-            "Resetting %s (%d of %d)..."
-            % (os.path.relpath(clone), idx + 1, len(clones))
-        )
+        print(f"Resetting {os.path.relpath(clone)} ({idx + 1} of {len(clones)})...")
         # TODO: Determine this based on GitHub API.
         branches_cmd = ["git", "-C", clone, "branch"]
         proc = subprocess.run(branches_cmd, check=True, capture_output=True, text=True)

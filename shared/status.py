@@ -36,15 +36,12 @@ def main(args, config):
     if all(x in ("master", "main") for x in branches):
         cprint("All clones are on the default branch.", colors.OKBLUE)
     elif len(branches) == 1:
-        cprint(
-            "All clones are on the %s branch." % list(branches.keys())[0], colors.OKBLUE
-        )
+        current_branch = list(branches.keys())[0]
+        cprint(f"All clones are on the {current_branch} branch.", colors.OKBLUE)
     else:
         cprint("WARNING: Clones are not all on the same branch.", colors.WARNING)
         for branch in branches:
-            print(
-                "These %d repos are on the %s branch:" % (len(branches[branch]), branch)
-            )
+            print(f"These {len(branches[branch])} repos are on the {branch} branch:")
             for repo in branches[branch]:
                 print(bullet + os.path.relpath(repo))
         cprint(
