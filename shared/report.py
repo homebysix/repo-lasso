@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright 2021 Elliot Jordan
 #
@@ -39,30 +38,25 @@ def main(args, config):
             intv_data = json.load(infile)
 
     md_data = "# RepoLasso Report"
-    md_data += (
-        "\n\nGenerated: %s"
-        % datetime.now().astimezone().replace(microsecond=0).isoformat()
-    )
+    md_data += f"\n\nGenerated: {datetime.now().astimezone().replace(microsecond=0).isoformat()}"
     repos = get_org_repos(config, args)
     for idx, intv_branch in enumerate(intv_data):
         cprint(
-            "Checking PRs related to %s (%d of %d)..."
-            % (intv_branch, idx + 1, len(intv_data)),
+            f"Checking PRs related to {intv_branch} ({idx + 1} of {len(intv_data)})...",
             colors.OKBLUE,
         )
-        md_data += "\n\n## %s" % intv_branch
+        md_data += f"\n\n## {intv_branch}"
         md_data += "\n\n| PR  | Created | Status |"
         md_data += "\n| --- | ------- | ------ |"
         prs = {}
         for idx, repo in enumerate(repos):
             print(
-                "Checking PRs for repo %s (%d of %d)..."
-                % (repo.full_name, idx + 1, len(repos))
+                f"Checking PRs for repo {repo.full_name} ({idx + 1} of {len(repos)})..."
             )
             repo_prs = repo.get_pulls(
                 state="all",
                 sort="created",
-                head="%s:%s" % (config["github_username"], intv_branch),
+                head=f"{config['github_username']}:{intv_branch}",
             )
             for repo_pr in repo_prs:
                 prs[repo_pr.html_url] = {
@@ -86,14 +80,13 @@ def main(args, config):
                     status = "⛔️ conflict"
                 else:
                     status = "🔵 open"
-                md_data += "\n| [%s#%s](%s) | %s | %s |" % (
-                    repo.full_name,
-                    repo_pr.number,
-                    repo_pr.html_url,
-                    repo_pr.created_at,
-                    status,
+                md_data += (
+                    f"\n| [{repo.full_name}#{repo_pr.number}]({repo_pr.html_url})"
+                    f" | {repo_pr.created_at} | {status} |"
                 )
-                with open(intv_path, "w") as outfile:
+                with open(intv_path, "w", encoding="utf-8") as outfile:
                     outfile.write(json.dumps(intv_data, indent=4))
-                with open(intv_md, "w") as outfile:
+                with open(intv_md, "w", encoding="utf-8") as outfile:
                     outfile.write(md_data)
+
+        cprint(f"Wrote report: {os.path.relpath(intv_md)}", colors.OKGREEN)

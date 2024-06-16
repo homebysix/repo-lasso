@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright 2021 Elliot Jordan
 #
@@ -18,20 +17,23 @@
 import os
 import subprocess
 
-from . import INTVDIR, colors, cprint, get_branch_info, get_clones, get_index_info
+from . import (
+    INTVDIR,
+    __version__,
+    colors,
+    cprint,
+    get_branch_info,
+    get_clones,
+    get_index_info,
+)
 
 
-def create_branch(branch_name, config, clones):
-    print("Creating branch %s..." % branch_name)
+def create_branch(branch_name, clones):
+    print(f"Creating branch {branch_name}...")
     for idx, clone in enumerate(clones):
         print(
-            "Checking out branch %s in clone %s (%d of %d)..."
-            % (
-                branch_name,
-                os.path.relpath(clone),
-                idx + 1,
-                len(clones),
-            )
+            f"Checking out branch {branch_name} in clone "
+            f"{os.path.relpath(clone)} ({idx + 1} of {len(clones)})..."
         )
         branch_cmd = ["git", "-C", clone, "branch"]
         proc = subprocess.run(branch_cmd, check=True, capture_output=True, text=True)
@@ -47,10 +49,12 @@ def create_branch(branch_name, config, clones):
     if not os.path.isdir(INTVDIR):
         os.mkdir(INTVDIR)
     if not os.path.isfile(pr_template):
-        with open(pr_template, "w") as outfile:
+        with open(pr_template, "w", encoding="utf-8") as outfile:
             outfile.write(
-                "# %s\n\n"
-                "Description of changes included in this pull request.\n" % branch_name
+                f"# {branch_name}\n\n"
+                "(DESCRIPTION OF CHANGES IN THIS PULL REQUEST)\n\n"
+                "Thanks for considering!\n\nThis PR was submitted using "
+                f"[Repo Lasso](https://github.com/homebysix/repo-lasso) v{__version__}.\n"
             )
 
 
@@ -65,23 +69,22 @@ def main(args, config):
     clones = get_clones(config)
     branches = get_branch_info(clones)
     changes = get_index_info(clones)
-    if all((x in ("master", "main") for x in branches)):
+    if all(x in ("master", "main") for x in branches):
         # Create new branch from default branch.
-        create_branch(branch_name, config, clones)
+        create_branch(branch_name, clones)
     elif list(branches.keys()) == [branch_name] and not changes.get("dirty"):
         # No need to create new branch. Waiting for changes to be made.
-        print("All clones are already on the %s branch." % branch_name)
+        print(f"All clones are already on the {branch_name} branch.")
     elif len(branches) == 1 and not changes.get("dirty"):
         # Create new branch from current branch.
         curr_branch = list(branches.keys())[0]
-        print("Clones are clean and on the %s branch." % curr_branch)
+        print(f"Clones are clean and on the {curr_branch} branch.")
         # TODO: Compare with default branch to know whether changes exist.
         cprint(
-            "WARNING: Additional changes may already exist on the %s branch."
-            % curr_branch,
+            f"WARNING: Additional changes may already exist on the {curr_branch} branch.",
             colors.WARNING,
         )
-        create_branch(branch_name, config, clones)
+        create_branch(branch_name, clones)
     else:
         cprint("ERROR: Clones are not all on the same branch.", colors.FAIL)
         cprint(

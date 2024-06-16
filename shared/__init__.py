@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright 2021 Elliot Jordan
 #
@@ -25,7 +24,7 @@ from textwrap import indent
 
 from github import Github, enable_console_debug_logging
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 # Path to base directories for storing cloned repositories and initiative info.
 REPODIR = os.path.join(os.path.dirname(__file__), "..", "repos")
@@ -96,6 +95,19 @@ def build_argument_parser():
     branch_parser.add_argument("name", help="branch name")
     branch_parser.set_defaults(func=branch)  # noqa: F821
 
+    check_parser = subparsers.add_parser(
+        "check",
+        help="check changes on the current branch and store their results",
+    )
+    check_parser.add_argument("script", help="script used to check changes")
+    check_parser.add_argument(
+        "--tries", default=1, help="number of times to try script per check"
+    )
+    check_parser.add_argument(
+        "--revert", action="store_true", help="revert changes if checks fail"
+    )
+    check_parser.set_defaults(func=check)  # noqa: F821
+
     commit_parser = subparsers.add_parser(
         "commit",
         help="create a new commit on the current branch across all clones",
@@ -154,7 +166,7 @@ def cprint(msg, color_class, indent_level=0):
 def get_config(path, args):
     """Read existing configuration or prompt user to create a new one."""
     if os.path.isfile(path):
-        print("Reading configuration from %s..." % os.path.relpath(path))
+        print(f"Reading configuration from {os.path.relpath(path)}...")
         try:
             with open(path, "rb") as infile:
                 config = json.load(infile)
@@ -162,15 +174,15 @@ def get_config(path, args):
             print("WARNING: Unable to read configuration.", colors.WARNING)
             config = {}
     else:
-        print("Creating new config file at %s..." % os.path.relpath(path))
+        print(f"Creating new config file at {os.path.relpath(path)}...")
         config = {}
 
     # Set GitHub username
     if args.gh_user:
-        print("GitHub username (from CLI): %s" % args.gh_user)
+        print(f"GitHub username (from CLI): {args.gh_user}")
         config["github_username"] = args.gh_user
     elif config.get("github_username"):
-        print("GitHub username (from config): %s" % config["github_username"])
+        print(f"GitHub username (from config): {config['github_username']}")
     else:
         config["github_username"] = input("Enter GitHub username: ")
 
@@ -182,10 +194,10 @@ def get_config(path, args):
     elif config.get("github_token"):
         print("GitHub token (from config): <stored>")
     elif os.path.isfile(autopkg_token):
-        print("A GitHub personal access token was found at %s" % autopkg_token)
+        print(f"A GitHub personal access token was found at {autopkg_token}")
         response = input("Do you want to use this token? [y/n] ")
         if response.lower().startswith("y"):
-            with open(autopkg_token, "r") as infile:
+            with open(autopkg_token, encoding="utf-8") as infile:
                 config["github_token"] = infile.read().strip()
     # If no stored GitHub tokens, prompt for one
     if not config.get("github_token"):
@@ -194,10 +206,10 @@ def get_config(path, args):
 
     # Set GitHub org
     if args.gh_org:
-        print("GitHub org (from CLI): %s" % args.gh_org)
+        print(f"GitHub org (from CLI): {args.gh_org}")
         config["github_org"] = args.gh_org
     elif config.get("github_org"):
-        print("GitHub org (from config): %s" % config["github_org"])
+        print(f"GitHub org (from config): {config['github_org']}")
     else:
         config["github_org"] = input("Enter GitHub org: ")
 
@@ -212,16 +224,16 @@ def get_config(path, args):
         excluded_repos = [
             trim_leading_org(x, config["github_org"]) for x in args.exclude_repo
         ]
-        print("Excluded repos (from CLI): %s" % excluded_repos)
+        print(f"Excluded repos (from CLI): {excluded_repos}")
         config["excluded_repos"] = excluded_repos
     elif config.get("excluded_repos"):
         excluded_repos = [
             trim_leading_org(x, config["github_org"]) for x in config["excluded_repos"]
         ]
-        print("Excluded repos (from config): %s" % config["excluded_repos"])
+        print(f"Excluded repos (from config): {config['excluded_repos']}")
 
     # Save updated config
-    with open(path, "w") as outfile:
+    with open(path, "w", encoding="utf-8") as outfile:
         outfile.write(json.dumps(config, indent=4))
 
     return config
@@ -234,26 +246,26 @@ def readable_time(seconds):
     if seconds >= 86400:  # 1 day
         days = seconds // 86400
         if days == 1:
-            parts.append("{} day".format(int(days)))
+            parts.append(f"{int(days)} day")
         else:
-            parts.append("{} days".format(int(days)))
+            parts.append(f"{int(days)} days")
     if seconds >= 3600:  # 1 hour
         hours = seconds // 3600 % 24
         if hours == 1:
-            parts.append("{} hour".format(int(hours)))
+            parts.append(f"{int(hours)} hour")
         else:
-            parts.append("{} hours".format(int(hours)))
+            parts.append(f"{int(hours)} hours")
     if seconds >= 60:  # 1 hour
         minutes = seconds // 60 % 60
         if minutes == 1:
-            parts.append("{} minute".format(int(minutes)))
+            parts.append(f"{int(minutes)} minute")
         else:
-            parts.append("{} minutes".format(int(minutes)))
+            parts.append(f"{int(minutes)} minutes")
     seconds = round(seconds % 60, 2)
     if seconds == 1:
-        parts.append("{} second".format(seconds))
+        parts.append(f"{seconds} second")
     else:
-        parts.append("{} seconds".format(seconds))
+        parts.append(f"{seconds} seconds")
 
     return ", ".join(parts)
 
@@ -276,11 +288,10 @@ def get_org_repos(config, args):
         enable_console_debug_logging()
 
     org_repos = g.get_organization(config["github_org"]).get_repos(type="sources")
-    org_repos
     if org_repos.totalCount > 99:
         cprint(
-            "WARNING: There are %d repositories in this organization. "
-            "This may take a while." % org_repos.totalCount,
+            f"WARNING: There are {org_repos.totalCount} repositories in this organization. "
+            "This may take a while.",
             colors.WARNING,
         )
     repos = []
@@ -288,19 +299,19 @@ def get_org_repos(config, args):
         # Skip excluded, archived, private, or empty repos.
         if repo.name in config.get("excluded_repos", []):
             if args.verbose >= 1:
-                print("Skipping %s (excluded)..." % repo.full_name)
+                print(f"Skipping {repo.full_name} (excluded)...")
             continue
         if repo.archived:
             if args.verbose >= 1:
-                print("Skipping %s (archived)..." % repo.full_name)
+                print(f"Skipping {repo.full_name} (archived)...")
             continue
         if repo.private:
             if args.verbose >= 1:
-                print("Skipping %s (private)..." % repo.full_name)
+                print(f"Skipping {repo.full_name} (private)...")
             continue
         # if repo.size == 0:
         #     if args.verbose >= 1:
-        #         print("Skipping %s (empty)..." % repo.full_name)
+        #         print(f"Skipping {repo.full_name} (empty)...")
         #     continue
         repos.append(repo)
 
@@ -314,11 +325,11 @@ def get_clones(config):
     clones = [x for x in clones if os.path.isdir(os.path.join(x, ".git"))]
     noun = "clone" if len(clones) == 1 else "clones"
     verb = "is" if len(clones) == 1 else "are"
-    print("%d repo %s %s cached." % (len(clones), noun, verb))
+    print(f"{len(clones)} repo {noun} {verb} cached.")
     if not clones:
         cprint(
             "TIP: Run `./RepoLasso.py sync` to fork and clone repos "
-            "in the %s org." % config["github_org"],
+            f"in the {config['github_org']} org.",
             colors.OKGREEN,
         )
 

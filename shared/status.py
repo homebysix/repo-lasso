@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright 2021 Elliot Jordan
 #
@@ -34,18 +33,15 @@ def main(args, config):
 
     print("Checking clone branch status...")
     branches = get_branch_info(clones)
-    if all((x in ("master", "main") for x in branches)):
+    if all(x in ("master", "main") for x in branches):
         cprint("All clones are on the default branch.", colors.OKBLUE)
     elif len(branches) == 1:
-        cprint(
-            "All clones are on the %s branch." % list(branches.keys())[0], colors.OKBLUE
-        )
+        current_branch = list(branches.keys())[0]
+        cprint(f"All clones are on the {current_branch} branch.", colors.OKBLUE)
     else:
         cprint("WARNING: Clones are not all on the same branch.", colors.WARNING)
         for branch in branches:
-            print(
-                "These %d repos are on the %s branch:" % (len(branches[branch]), branch)
-            )
+            print(f"These {len(branches[branch])} repos are on the {branch} branch:")
             for repo in branches[branch]:
                 print(bullet + os.path.relpath(repo))
         cprint(
@@ -60,6 +56,6 @@ def main(args, config):
         cprint("All clones are clean.", colors.OKBLUE)
     else:
         cprint("WARNING: Some clones have uncommitted changes.", colors.WARNING)
-        print("These %d repos have uncommitted changes:" % len(changes["dirty"]))
+        print(f"These {len(changes['dirty'])} repos have uncommitted changes:")
         for repo in changes["dirty"]:
             print(bullet + os.path.relpath(repo))

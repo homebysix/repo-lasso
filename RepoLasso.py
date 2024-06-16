@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright 2021 Elliot Jordan
 #
@@ -35,7 +34,6 @@ For more information and usage walkthrough, see the README.
 """
 
 import sys
-from distutils.version import LooseVersion
 from textwrap import dedent
 from time import time
 
@@ -44,6 +42,7 @@ from shared import (  # noqa: F401
     __version__,
     branch,
     build_argument_parser,
+    check,
     colors,
     commit,
     cprint,
@@ -82,13 +81,6 @@ def main():
            """
     cprint(dedent(logo), colors.HEADER)
 
-    if LooseVersion(__version__) < LooseVersion("1.0.0"):
-        cprint(
-            "WARNING: RepoLasso is still experimental. Verify all changes "
-            "manually before submitting pull requests in bulk.\n",
-            colors.WARNING,
-        )
-
     # Read configuration or prompt user for configuration items.
     cprint("CONFIGURATION", colors.OKBLUE)
     config = get_config(CONFIG_PATH, args)
@@ -97,7 +89,7 @@ def main():
     args.func.main(args, config)
 
     # Print run duration.
-    cprint("\nFinished in %s." % readable_time(time() - start), colors.HEADER)
+    cprint(f"\nFinished in {readable_time(time() - start)}.", colors.HEADER)
 
 
 if __name__ == "__main__":

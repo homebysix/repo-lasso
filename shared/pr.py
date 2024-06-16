@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright 2021 Elliot Jordan
 #
@@ -19,16 +18,17 @@ import json
 import os
 import subprocess
 from datetime import datetime
+from time import sleep
 
 from github import Github, GithubException
 
 from . import INTVDIR, colors, cprint, get_clones
 
 
-def load_pr_template(template_path, args):
+def load_pr_template(template_path):
     """Given a path to a markdown file, load the file as a pull request template."""
 
-    with open(template_path, "r") as infile:
+    with open(template_path, encoding="utf-8") as infile:
         template_contents = infile.read()
     if template_contents.startswith("# "):
         title = template_contents.split("\n")[0].lstrip("# ").strip()
@@ -47,10 +47,10 @@ def open_pull_request(clone, base, head, args, config):
     default_pr_template = os.path.join(INTVDIR, head + ".md")
     if args.template and os.path.isfile(args.template):
         print("  Loaded template from CLI options.")
-        title, body = load_pr_template(args.template, args)
+        title, body = load_pr_template(args.template)
     elif os.path.isfile(default_pr_template):
         print("  Loaded template from default path.")
-        title, body = load_pr_template(default_pr_template, args)
+        title, body = load_pr_template(default_pr_template)
     else:
         print("  No template found.")
         title = head
@@ -61,18 +61,34 @@ def open_pull_request(clone, base, head, args, config):
     try:
         pr = upstream_repo.create_pull(
             base=base,
-            head="%s:%s" % (g.get_user().login, head),
+            head=f"{g.get_user().login}:{head}",
             title=title,
             body=body,
         )
-        cprint("Pull request opened: %s" % pr.html_url, colors.OKGREEN, 2)
-    except GithubException:
-        cprint(
-            "WARNING: Unable to open pull request. "
-            "A PR may already exist for this branch.",
-            colors.WARNING,
-            2,
-        )
+        cprint(f"Pull request opened: {pr.html_url}", colors.OKGREEN, 2)
+        # Proactively avoid rate limiting
+        sleep(3)
+    except GithubException as err:
+        if err.status == 403:
+            cprint(
+                "WARNING: Rate limited. Waiting 60 seconds before continuing.",
+                colors.WARNING,
+                2,
+            )
+            cprint(g.get_rate_limit(), colors.WARNING, 2)
+            sleep(60)
+        elif err.status == 422:
+            cprint(
+                "WARNING: A pull request may already exist for this branch. Skipping.",
+                colors.WARNING,
+                2,
+            )
+        else:
+            cprint(
+                f"WARNING: Unable to open pull request. Details: {err.status} - {err.data}",
+                colors.WARNING,
+                2,
+            )
         pr = None
 
     return pr
@@ -102,7 +118,7 @@ def log_initiative(pr, branch, config):
                 "pull_requests": [pr.html_url],
             }
         }
-    with open(intv_path, "w") as outfile:
+    with open(intv_path, "w", encoding="utf-8") as outfile:
         outfile.write(json.dumps(intv_data, indent=4))
 
 
@@ -113,8 +129,8 @@ def main(args, config):
     clones = get_clones(config)
     for idx, clone in enumerate(clones):
         print(
-            "Evaluating pull request eligibility for %s (%d of %d)..."
-            % (os.path.relpath(clone), idx + 1, len(clones))
+            "Evaluating pull request eligibility for "
+            f"{os.path.relpath(clone)} ({idx + 1} of {len(clones)})..."
         )
 
         # TODO: Determine this based on GitHub API.
@@ -134,7 +150,7 @@ def main(args, config):
             "-C",
             clone,
             "log",
-            "%s..%s" % (default_branch, current_branch),
+            f"{default_branch}..{current_branch}",
             "--oneline",
         ]
         proc = subprocess.run(status_cmd, check=True, capture_output=True, text=True)
