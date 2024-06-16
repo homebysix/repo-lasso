@@ -89,7 +89,7 @@ def main():
     args.func.main(args, config)
 
     # Print run duration.
-    cprint("\nFinished in %s." % readable_time(time() - start), colors.HEADER)
+    cprint(f"\nFinished in {readable_time(time() - start)}.", colors.HEADER)
 
 
 if __name__ == "__main__":
