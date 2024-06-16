@@ -17,7 +17,6 @@ All notable changes to this project will be documented in this file. This projec
 ### Changed
 
 - More specific error output when pull requests fail.
-- Using `packaging.version.Version` instead of the beloved `distutils.version.LooseVersion` for checking of Recipe Robot beta status.
 
 ## 1.0.0 - 2021-03-29
 

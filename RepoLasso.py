@@ -37,8 +37,6 @@ import sys
 from textwrap import dedent
 from time import time
 
-from packaging.version import Version
-
 from shared import (  # noqa: F401
     CONFIG_PATH,
     __version__,
@@ -82,13 +80,6 @@ def main():
                      /_/                            {__version__}
            """
     cprint(dedent(logo), colors.HEADER)
-
-    if Version(__version__) < Version("1.0.0"):
-        cprint(
-            "WARNING: RepoLasso is still experimental. Verify all changes "
-            "manually before submitting pull requests in bulk.\n",
-            colors.WARNING,
-        )
 
     # Read configuration or prompt user for configuration items.
     cprint("CONFIGURATION", colors.OKBLUE)
