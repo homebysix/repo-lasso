@@ -24,7 +24,7 @@ from textwrap import indent
 
 from github import Github, enable_console_debug_logging
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 # Path to base directories for storing cloned repositories and initiative info.
 REPODIR = os.path.join(os.path.dirname(__file__), "..", "repos")
