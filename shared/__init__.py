@@ -29,6 +29,7 @@ __version__ = "1.1.1"
 # Path to base directories for storing cloned repositories and initiative info.
 REPODIR = os.path.join(os.path.dirname(__file__), "..", "repos")
 INTVDIR = os.path.join(os.path.dirname(__file__), "..", "initiatives")
+REPORTDIR = os.path.join(os.path.dirname(__file__), "..", "reports")
 
 # Markdown template for pull requests
 PR_TEMPLATE = (

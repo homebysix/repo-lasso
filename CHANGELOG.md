@@ -6,7 +6,9 @@ All notable changes to this project will be documented in this file. This projec
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Completely rebuilt `report` feature, which is now much more performant and includes the pull request template of each initiative for better context. The backend of this feature stores pull request status in a JSON file that can also be parsed with other tools for those who wish to create their own custom reports.
 
 ## [1.1.0] - 2024-06-16
 

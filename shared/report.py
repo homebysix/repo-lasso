@@ -18,7 +18,15 @@ import json
 import os
 from datetime import datetime
 
-from . import INTVDIR, colors, cprint, get_org_repos
+from . import (
+    INTVDIR,
+    PR_TEMPLATE,
+    REPORTDIR,
+    __version__,
+    colors,
+    cprint,
+    get_org_repos,
+)
 
 
 def main(args, config):
@@ -26,67 +34,135 @@ def main(args, config):
 
     cprint("\nREPORT", colors.OKBLUE)
 
+    # Get list of branches based on PR templates saved in the initiatives directory
     if not os.path.isdir(INTVDIR):
         os.mkdir(INTVDIR)
+        intv_branches = []
+    else:
+        intv_branches = [
+            os.path.splitext(file)[0]
+            for file in os.listdir(INTVDIR)
+            if file.endswith(".md")
+        ]
 
-    # Read initiative data from stored file, if it exists.
-    intv_data = {}
-    intv_path = os.path.join(INTVDIR, config["github_org"] + ".json")
-    intv_md = os.path.join(INTVDIR, config["github_org"] + ".md")
-    if os.path.isfile(intv_path):
-        with open(intv_path, "rb") as infile:
-            intv_data = json.load(infile)
+    # Create directory to hold reports
+    if not os.path.isdir(REPORTDIR):
+        os.mkdir(REPORTDIR)
 
-    md_data = "# RepoLasso Report"
-    md_data += f"\n\nGenerated: {datetime.now().astimezone().replace(microsecond=0).isoformat()}"
-    repos = get_org_repos(config, args)
-    for idx, intv_branch in enumerate(intv_data):
+    # Read report data from stored file, if it exists
+    report_data = {}
+    report_path = os.path.join(REPORTDIR, config["github_org"] + ".json")
+    report_md = os.path.join(REPORTDIR, config["github_org"] + ".md")
+    if os.path.isfile(report_path):
+        with open(report_path, "rb") as infile:
+            report_data = json.load(infile)
+        # Create files in initiatives directory for each branch in an existing report
+        for r_branch in report_data:
+            intv_file = os.path.join(INTVDIR, r_branch + ".md")
+            if not os.path.isfile(intv_file):
+                with open(intv_file, "w", encoding="utf-8") as outfile:
+                    outfile.write(PR_TEMPLATE % r_branch)
+                intv_branches.append(r_branch)
+
+    # Stop here if no initiatives were found
+    if not intv_branches:
         cprint(
-            f"Checking PRs related to {intv_branch} ({idx + 1} of {len(intv_data)})...",
-            colors.OKBLUE,
+            "No initiatives found. Use `./RepoLasso.py branch` to create one.",
+            colors.WARNING,
         )
-        md_data += f"\n\n## {intv_branch}"
-        md_data += "\n\n| PR  | Created | Status |"
-        md_data += "\n| --- | ------- | ------ |"
-        prs = {}
+        return
+    print(f"Found {len(intv_branches)} initiatives.")
+
+    # Check status of pull requests for each branch
+    repos = get_org_repos(config, args)
+    try:
         for idx, repo in enumerate(repos):
             print(
                 f"Checking PRs for repo {repo.full_name} ({idx + 1} of {len(repos)})..."
             )
-            repo_prs = repo.get_pulls(
-                state="all",
-                sort="created",
-                head=f"{config['github_username']}:{intv_branch}",
-            )
-            for repo_pr in repo_prs:
-                prs[repo_pr.html_url] = {
-                    "state": repo_pr.state,
-                    "merged": repo_pr.merged,
-                    "created_at": str(repo_pr.created_at),
-                    "updated_at": str(repo_pr.updated_at),
-                    "closed_at": str(repo_pr.closed_at),
-                    "merged_at": str(repo_pr.merged_at),
-                    "additions": repo_pr.additions,
-                    "deletions": repo_pr.deletions,
-                    "changed_files": repo_pr.changed_files,
-                    "mergeable": repo_pr.mergeable,
-                }
-                intv_data[intv_branch]["pull_requests"] = prs
-                if repo_pr.merged:
+            repo_prs = repo.get_pulls(state="all", sort="created")
+            for idx, branch in enumerate(intv_branches):
+                branch_prs = [
+                    x
+                    for x in repo_prs
+                    if x.user.login == config["github_username"]
+                    if x.head.ref == branch
+                ]
+                if not branch_prs:
+                    continue
+                print(f"  Found {branch}")
+                for branch_pr in branch_prs:
+                    pr = {
+                        "html_url": branch_pr.html_url,
+                        "state": branch_pr.state,
+                        "merged": branch_pr.merged,
+                        "created_at": str(branch_pr.created_at),
+                        "updated_at": str(branch_pr.updated_at),
+                        "closed_at": str(branch_pr.closed_at),
+                        "merged_at": str(branch_pr.merged_at),
+                        "additions": branch_pr.additions,
+                        "deletions": branch_pr.deletions,
+                        "changed_files": branch_pr.changed_files,
+                        "mergeable_state": branch_pr.mergeable_state,
+                    }
+
+                    # Update report data
+                    if branch not in report_data:
+                        report_data[branch] = {}
+                    if not report_data[branch].get("pull_requests"):
+                        report_data[branch]["pull_requests"] = [pr]
+                    elif branch_pr.html_url not in [
+                        x["html_url"] for x in report_data[branch]["pull_requests"]
+                    ]:
+                        report_data[branch]["pull_requests"].append(pr)
+
+                # Update report json and markdown after each initiative is processed
+                with open(report_path, "w", encoding="utf-8") as outfile:
+                    outfile.write(json.dumps(report_data, indent=4))
+        cprint(f"Wrote data: {os.path.relpath(report_path)}", colors.OKGREEN)
+
+    except KeyboardInterrupt:
+        cprint("Ctrl-C received.", colors.FAIL)
+
+    finally:
+        # Update markdown
+        time_now = datetime.now().astimezone().replace(microsecond=0).isoformat()
+        md_data = f"# RepoLasso report for `{config['github_org']}` org"
+        md_data += f"\n\nGenerated {time_now} by Repo Lasso {__version__}."
+        for branch_name, branch_data in report_data.items():
+            md_data += f"\n\n## {branch_name}"
+            with open(
+                os.path.join(INTVDIR, branch_name + ".md"), encoding="utf-8"
+            ) as infile:
+                pr_message = infile.read()
+            # Decrease all markdown headings by two levels for quoting
+            pr_message = pr_message.replace("\n#", "\n###")
+            if pr_message.startswith("#"):
+                pr_message = "##" + pr_message
+            md_data += "\n\n>"
+            md_data += "\n> ".join(pr_message.split("\n"))
+            md_data += "\n\n| PR  | Created | Status |"
+            md_data += "\n| --- | ------- | ------ |"
+            for pr in branch_data.get("pull_requests", []):
+                if pr["merged"] is True:
                     status = "🟢 merged"
-                elif repo_pr.state == "closed":
+                elif pr["state"] == "closed":
                     status = "🔴 closed"
-                elif not repo_pr.mergeable:
+                elif pr["mergeable_state"] != "clean":
                     status = "⛔️ conflict"
                 else:
                     status = "🔵 open"
-                md_data += (
-                    f"\n| [{repo.full_name}#{repo_pr.number}]({repo_pr.html_url})"
-                    f" | {repo_pr.created_at} | {status} |"
+                shortened_pr = (
+                    pr["html_url"]
+                    .replace("https://github.com/", "")
+                    .replace("/pull/", "#")
                 )
-                with open(intv_path, "w", encoding="utf-8") as outfile:
-                    outfile.write(json.dumps(intv_data, indent=4))
-                with open(intv_md, "w", encoding="utf-8") as outfile:
-                    outfile.write(md_data)
+                md_data += (
+                    f"\n| [{shortened_pr}]({pr["html_url"]})"
+                    f" | {pr["created_at"]} | {status} |"
+                )
+            md_data += "\n\n---"
 
-        cprint(f"Wrote report: {os.path.relpath(intv_md)}", colors.OKGREEN)
+        with open(report_md, "w", encoding="utf-8") as outfile:
+            outfile.write(md_data)
+        cprint(f"Wrote report: {os.path.relpath(report_md)}", colors.OKGREEN)
