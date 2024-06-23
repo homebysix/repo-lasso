@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2021 Elliot Jordan
+# Copyright 2021-2024 Elliot Jordan
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import subprocess
 
 from . import (
     INTVDIR,
-    __version__,
+    PR_TEMPLATE,
     colors,
     cprint,
     get_branch_info,
@@ -50,12 +50,7 @@ def create_branch(branch_name, clones):
         os.mkdir(INTVDIR)
     if not os.path.isfile(pr_template):
         with open(pr_template, "w", encoding="utf-8") as outfile:
-            outfile.write(
-                f"# {branch_name}\n\n"
-                "(DESCRIPTION OF CHANGES IN THIS PULL REQUEST)\n\n"
-                "Thanks for considering!\n\nThis PR was submitted using "
-                f"[Repo Lasso](https://github.com/homebysix/repo-lasso) v{__version__}.\n"
-            )
+            outfile.write(PR_TEMPLATE % branch_name)
 
 
 def main(args, config):

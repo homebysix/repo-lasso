@@ -2,5 +2,6 @@
 *.pyc
 *.json
 initiatives/
+reports/
 repos/
 tests/test_config.json
