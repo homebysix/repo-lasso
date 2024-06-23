@@ -103,7 +103,7 @@ def main(args, config):
                         "additions": branch_pr.additions,
                         "deletions": branch_pr.deletions,
                         "changed_files": branch_pr.changed_files,
-                        "mergeable_state": branch_pr.mergeable_state,
+                        "mergeable": branch_pr.mergeable,
                     }
 
                     # Update report data
@@ -148,7 +148,7 @@ def main(args, config):
                     status = "🟢 merged"
                 elif pr["state"] == "closed":
                     status = "🔴 closed"
-                elif pr["mergeable_state"] != "clean":
+                elif pr["mergeable"] is False:
                     status = "⛔️ conflict"
                 else:
                     status = "🔵 open"
