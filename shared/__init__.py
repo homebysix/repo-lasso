@@ -30,6 +30,14 @@ __version__ = "1.1.1"
 REPODIR = os.path.join(os.path.dirname(__file__), "..", "repos")
 INTVDIR = os.path.join(os.path.dirname(__file__), "..", "initiatives")
 
+# Markdown template for pull requests
+PR_TEMPLATE = (
+    "# %s\n\n"
+    "(DESCRIPTION OF CHANGES IN THIS PULL REQUEST)\n\n"
+    "Thanks for considering!\n\nThis PR was submitted using "
+    f"[Repo Lasso](https://github.com/homebysix/repo-lasso) v{__version__}.\n"
+)
+
 # Path to the configuration file.
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "config.json")
 
