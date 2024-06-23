@@ -125,10 +125,16 @@ def main(args, config):
         cprint("Ctrl-C received.", colors.FAIL)
 
     finally:
+        report_data = dict(sorted(report_data.items()))
         # Update markdown
         time_now = datetime.now().astimezone().replace(microsecond=0).isoformat()
+        pr_count = sum(len(x["pull_requests"]) for x in report_data.values())
         md_data = f"# RepoLasso report for `{config['github_org']}` org"
-        md_data += f"\n\nGenerated {time_now} by Repo Lasso {__version__}."
+        md_data += f"\n\nGenerated {time_now} by [Repo Lasso]"
+        md_data += f"(https://github.com/homebysix/repo-lasso) {__version__}."
+        md_data += (
+            f"\n\nFound {pr_count} pull requests across {len(report_data)} initiatives."
+        )
         for branch_name, branch_data in report_data.items():
             md_data += f"\n\n## {branch_name}"
             with open(
