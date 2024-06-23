@@ -2,7 +2,7 @@
 
 # $1 is the path to the git clone
 # $2 is the path to the file being tested
-# $3 is the number of the current attempt
+# $3 is the number of the current attempt (starting with 0)
 
 CACHE_DIR="/tmp/repo-lasso/autopkg-cache"
 
