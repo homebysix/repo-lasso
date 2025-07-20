@@ -44,30 +44,27 @@ class TestRepoLasso(unittest.TestCase):
     def test_main_without_func_shows_help(self, mock_cprint, mock_parser, mock_config):
         """Test main function shows help when no verb is provided."""
 
-        # Create a simple object with empty __dict__ (no func attribute)
-        class MockArgs:
-            def __init__(self):
-                pass
-
-        mock_args = MockArgs()
+        # Create a Namespace without a func attribute (like argparse does when no subcommand is given)
+        mock_args = Namespace()
+        # Don't add any 'func' attribute - this simulates when no subcommand is provided
 
         mock_argparser = MagicMock()
         mock_argparser.parse_args.return_value = mock_args
         mock_parser.return_value = mock_argparser
         mock_config.return_value = {"test": "config"}
 
-        # Test
+        # Test - expect SystemExit to be raised
         with patch("sys.argv", ["RepoLasso.py"]):
-            with patch("sys.exit") as mock_exit:
+            with self.assertRaises(SystemExit) as context:
                 RepoLasso.main()
 
         # Assertions
+        self.assertEqual(context.exception.code, 0)  # Should exit with code 0
         mock_argparser.print_help.assert_called_once()
-        mock_exit.assert_called_once_with(0)
         # get_config should not be called when no func is present
         mock_config.assert_not_called()
-        # cprint should only be called once for the logo, not for CONFIGURATION
-        self.assertEqual(mock_cprint.call_count, 1)
+        # cprint should not be called at all since we exit early
+        mock_cprint.assert_not_called()
 
 
 if __name__ == "__main__":
