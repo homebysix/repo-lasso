@@ -147,12 +147,27 @@ def sync_clone(clone, config, args, idx, total):
     current_branch = proc.stdout.strip()
 
     fetch_cmd = ["git", "-C", clone, "fetch", "--all"]
-    _ = subprocess.run(fetch_cmd, check=True, capture_output=args.verbose == 0)
+    fetch_proc = subprocess.run(
+        fetch_cmd, check=False, capture_output=args.verbose == 0
+    )
+    if fetch_proc.returncode != 0:
+        cprint(f"Failed to fetch upstream for {clone}. ", colors.WARNING, 2)
+        return
     if current_branch in ("main", "master"):
         pull_cmd = ["git", "-C", clone, "pull", "--ff-only", "upstream", default_branch]
-        _ = subprocess.run(pull_cmd, check=True, capture_output=args.verbose == 0)
+        pull_proc = subprocess.run(
+            pull_cmd, check=False, capture_output=args.verbose == 0
+        )
+        if pull_proc.returncode != 0:
+            cprint(f"Failed to pull upstream for {clone}. ", colors.WARNING, 2)
+            return
         push_cmd = ["git", "-C", clone, "push", "origin"]
-        _ = subprocess.run(push_cmd, check=True, capture_output=args.verbose == 0)
+        push_proc = subprocess.run(
+            push_cmd, check=False, capture_output=args.verbose == 0
+        )
+        if push_proc.returncode != 0:
+            cprint(f"Failed to push origin for {clone}. ", colors.WARNING, 2)
+            return
 
 
 def parallelize(args):

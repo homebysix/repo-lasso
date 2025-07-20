@@ -6,7 +6,9 @@ All notable changes to this project will be documented in this file. This projec
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- More graceful handling of Git fetch, pull, and push errors.
 
 ## [1.2.0] - 2024-06-23
 
