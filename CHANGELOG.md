@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file. This projec
 ### Fixed
 
 - More graceful handling of Git fetch, pull, and push errors.
+- Greatly improved unit test coverage.
 
 ## [1.2.0] - 2024-06-23
 

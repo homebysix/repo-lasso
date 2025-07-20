@@ -1,21 +1,17 @@
 # Repo Lasso Tests
 
+It's recommended to create a virtual environment for testing:
+
+    [[ -d .venv ]] || virtualenv ~/Downloads/.venv
+    venv/bin/pip install -r requirements.txt
+    venv/bin/pip install coverage
+
 To run the tests:
 
-```sh
-python3 -m unittest
-```
+    .venv/bin/python -m coverage run -m unittest discover -v
 
-Expected output:
+To generate coverage reports:
 
-```txt
-.Reading configuration from tests/test_config.json...
-GitHub username (from CLI): nobody
-GitHub token (from CLI): <stored>
-GitHub org (from CLI): macadmins
-....
-----------------------------------------------------------------------
-Ran 5 tests in 0.001s
-
-OK
-```
+    .venv/bin/python -m coverage report
+    .venv/bin/python -m coverage html
+    .venv/bin/python -m coverage xml
