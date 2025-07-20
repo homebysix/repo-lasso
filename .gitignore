@@ -1,7 +1,27 @@
+# macOS system files
 .DS_Store
+
+# Python cache and compiled files
+__pycache__/
 *.pyc
+
+# Config file
 *.json
+
+# Output directories
 initiatives/
 reports/
+
+# Cloned repos
 repos/
-tests/test_config.json
+
+# Test coverage reports
+htmlcov/
+.coverage
+coverage.xml
+
+# Python virtual environment
+.venv/
+
+# Environment variables
+.env
