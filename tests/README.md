@@ -2,7 +2,7 @@
 
 It's recommended to create a virtual environment for testing:
 
-    [[ -d .venv ]] || virtualenv ~/Downloads/.venv
+    [[ -d .venv ]] || virtualenv .venv
     venv/bin/pip install -r requirements.txt
     venv/bin/pip install coverage
 
