@@ -14,10 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 import subprocess
 import sys
 from multiprocessing.pool import ThreadPool
+from typing import Any, Dict, Generator, List
 
 from github import Github
 from github.GithubException import GithubException
@@ -25,7 +27,7 @@ from github.GithubException import GithubException
 from . import REPODIR, colors, cprint, get_clones, get_org_repos
 
 
-def get_user_forks(org_repos, config):
+def get_user_forks(org_repos: List[Any], config: Dict[str, Any]) -> List[Any]:
     """Return API information about your forks of org repos."""
 
     # Object for communicating with GitHub API
@@ -49,7 +51,9 @@ def get_user_forks(org_repos, config):
     return user_forks
 
 
-def create_user_forks(repos_to_fork, config):
+def create_user_forks(
+    repos_to_fork: List[Any], config: Dict[str, Any]
+) -> Generator[Any, None, None]:
     """Create forks for any repos not already forked from org."""
 
     print(f"Need to create forks for the following {len(repos_to_fork)} repos:")
@@ -77,10 +81,10 @@ def create_user_forks(repos_to_fork, config):
                 colors.WARNING,
                 2,
             )
-            cprint(err, colors.WARNING, 2)
+            cprint(str(err), colors.WARNING, 2)
 
 
-def create_clones(forks_to_clone, config):
+def create_clones(forks_to_clone: List[Any], config: Dict[str, Any]) -> None:
     """Create clones for any forks not already cloned locally."""
 
     print(f"Need to create clones for the following {len(forks_to_clone)} repos:")
@@ -130,7 +134,9 @@ def create_clones(forks_to_clone, config):
                 pass
 
 
-def sync_clone(clone, config, args, idx, total):
+def sync_clone(
+    clone: str, config: Dict[str, Any], args: argparse.Namespace, idx: int, total: int
+) -> None:
     """Fetch and pull a clone from upstream, and push commits to origin."""
 
     cprint(
@@ -170,14 +176,14 @@ def sync_clone(clone, config, args, idx, total):
             return
 
 
-def parallelize(args):
+def parallelize(args: Any) -> Any:
     """Helper function that allows us to compact needed arguments and pass them
     to the sync_clone() function."""
 
     return sync_clone(*args)
 
 
-def main(args, config):
+def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     """Main function for sync verb."""
 
     cprint("\nSYNC", colors.OKBLUE)

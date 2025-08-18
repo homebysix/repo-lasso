@@ -14,9 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import json
 import os
 from datetime import datetime
+from typing import Any, Dict
 
 from . import (
     INTVDIR,
@@ -29,7 +31,7 @@ from . import (
 )
 
 
-def main(args, config):
+def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     """Main function for report verb."""
 
     cprint("\nREPORT", colors.OKBLUE)

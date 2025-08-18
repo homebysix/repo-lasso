@@ -14,18 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import json
 import os
 import subprocess
 from datetime import datetime
 from time import sleep
+from typing import Any, Dict, Optional, Tuple
 
 from github import Github, GithubException
 
 from . import INTVDIR, colors, cprint, get_clones
 
 
-def load_pr_template(template_path):
+def load_pr_template(template_path: str) -> Tuple[str, str]:
     """Given a path to a markdown file, load the file as a pull request template."""
 
     with open(template_path, encoding="utf-8") as infile:
@@ -37,7 +39,9 @@ def load_pr_template(template_path):
     return title, body
 
 
-def open_pull_request(clone, base, head, args, config):
+def open_pull_request(
+    clone: str, base: str, head: str, args: argparse.Namespace, config: Dict[str, Any]
+) -> Optional[Any]:
     """For an eligible repo, open a pull request on GitHub."""
 
     # Object for communicating with GitHub API
@@ -75,7 +79,7 @@ def open_pull_request(clone, base, head, args, config):
                 colors.WARNING,
                 2,
             )
-            cprint(g.get_rate_limit(), colors.WARNING, 2)
+            cprint(str(g.get_rate_limit()), colors.WARNING, 2)
             sleep(60)
         elif err.status == 422:
             cprint(
@@ -94,7 +98,7 @@ def open_pull_request(clone, base, head, args, config):
     return pr
 
 
-def log_initiative(pr, branch, config):
+def log_initiative(pr: Any, branch: str, config: Dict[str, Any]) -> None:
     """Update the json file that tracks each initiative."""
 
     if not os.path.isdir(INTVDIR):
@@ -122,7 +126,7 @@ def log_initiative(pr, branch, config):
         outfile.write(json.dumps(intv_data, indent=4))
 
 
-def main(args, config):
+def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     """Main function for pr verb."""
 
     cprint("\nPULL REQUESTS", colors.OKBLUE)

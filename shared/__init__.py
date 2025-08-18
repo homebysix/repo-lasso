@@ -41,6 +41,7 @@ import subprocess
 from getpass import getpass
 from glob import glob
 from textwrap import dedent, indent
+from typing import Any, Dict, List
 
 from github import Github, enable_console_debug_logging
 
@@ -74,7 +75,7 @@ PR_TEMPLATE = (
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "config.json")
 
 
-def build_argument_parser():
+def build_argument_parser() -> argparse.ArgumentParser:
     """Build and return the argument parser."""
     parser = argparse.ArgumentParser(
         description=__doc__ % dedent(LOGO),
@@ -119,7 +120,7 @@ def build_argument_parser():
         "status",
         help="get branch and clean/dirty status of current cached clones",
     )
-    status_parser.set_defaults(func=status)  # noqa: F821
+    status_parser.set_defaults(func=status)  # type: ignore  # noqa: F821
 
     sync_parser = subparsers.add_parser(
         "sync",
@@ -127,14 +128,14 @@ def build_argument_parser():
         "GitHub API, create forks of all eligible repos, and "
         "clone the forks locally",
     )
-    sync_parser.set_defaults(func=sync)  # noqa: F821
+    sync_parser.set_defaults(func=sync)  # type: ignore  # noqa: F821
 
     branch_parser = subparsers.add_parser(
         "branch",
         help="create a new branch or switch to an existing branch on all clones",
     )
     branch_parser.add_argument("name", help="branch name")
-    branch_parser.set_defaults(func=branch)  # noqa: F821
+    branch_parser.set_defaults(func=branch)  # type: ignore  # noqa: F821
 
     check_parser = subparsers.add_parser(
         "check",
@@ -147,21 +148,21 @@ def build_argument_parser():
     check_parser.add_argument(
         "--revert", action="store_true", help="revert changes if checks fail"
     )
-    check_parser.set_defaults(func=check)  # noqa: F821
+    check_parser.set_defaults(func=check)  # type: ignore  # noqa: F821
 
     commit_parser = subparsers.add_parser(
         "commit",
         help="create a new commit on the current branch across all clones",
     )
     commit_parser.add_argument("message", help="commit message")
-    commit_parser.set_defaults(func=commit)  # noqa: F821
+    commit_parser.set_defaults(func=commit)  # type: ignore  # noqa: F821
 
     pr_parser = subparsers.add_parser(
         "pr",
         help="push new commits to the origin and open pull requests for any "
         "clones with changes",
     )
-    pr_parser.set_defaults(func=pr)  # noqa: F821
+    pr_parser.set_defaults(func=pr)  # type: ignore  # noqa: F821
     pr_parser.add_argument(
         "--template",
         action="store",
@@ -174,7 +175,7 @@ def build_argument_parser():
         "default branch, and fetch/pull latest changes from "
         "GitHub in preparation for creating a new initiative",
     )
-    reset_parser.set_defaults(func=reset)  # noqa: F821
+    reset_parser.set_defaults(func=reset)  # type: ignore  # noqa: F821
 
     report_parser = subparsers.add_parser(
         "report",
@@ -182,7 +183,7 @@ def build_argument_parser():
         "including whether submitted pull requests have been "
         "merged",
     )
-    report_parser.set_defaults(func=report)  # noqa: F821
+    report_parser.set_defaults(func=report)  # type: ignore  # noqa: F821
 
     return parser
 
@@ -198,13 +199,13 @@ class colors:
     ENDC = "\033[0m"
 
 
-def cprint(msg, color_class, indent_level=0):
+def cprint(msg: str, color_class: str, indent_level: int = 0) -> None:
     """Function for printing colorized output."""
 
     print(indent(f"{color_class}{msg}{colors.ENDC}", " " * indent_level))
 
 
-def get_config(path, args):
+def get_config(path: str, args: argparse.Namespace) -> Dict[str, Any]:
     """Read existing configuration or prompt user to create a new one."""
     if os.path.isfile(path):
         print(f"Reading configuration from {os.path.relpath(path)}...")
@@ -280,7 +281,7 @@ def get_config(path, args):
     return config
 
 
-def readable_time(seconds):
+def readable_time(seconds: float) -> str:
     """Converts a number of seconds to a human-readable time in seconds, minutes, and hours."""
 
     parts = []
@@ -311,7 +312,7 @@ def readable_time(seconds):
     return ", ".join(parts)
 
 
-def trim_leading_org(repo, org):
+def trim_leading_org(repo: str, org: str) -> str:
     """Strips leading organization from repository names.
     Example: autopkg/recipes --> recipes
     """
@@ -320,7 +321,7 @@ def trim_leading_org(repo, org):
     return repo
 
 
-def get_org_repos(config, args):
+def get_org_repos(config: Dict[str, Any], args: argparse.Namespace) -> List[Any]:
     """Return API information about org repos."""
 
     # Object for communicating with GitHub API
@@ -359,7 +360,7 @@ def get_org_repos(config, args):
     return repos
 
 
-def get_clones(config):
+def get_clones(config: Dict[str, Any]) -> List[str]:
     """Get information on clones in the cache."""
 
     clones = glob(os.path.join(REPODIR, config["github_org"], "*"))
@@ -377,10 +378,10 @@ def get_clones(config):
     return clones
 
 
-def get_branch_info(clones):
+def get_branch_info(clones: List[str]) -> Dict[str, List[str]]:
     """Get information on which clones are on which branches."""
 
-    branch_info = {}
+    branch_info: Dict[str, List[str]] = {}
     for clone in clones:
         branch_cmd = ["git", "-C", clone, "branch", "--show-current"]
         proc = subprocess.run(branch_cmd, check=False, capture_output=True, text=True)
@@ -393,10 +394,10 @@ def get_branch_info(clones):
     return branch_info
 
 
-def get_index_info(clones):
+def get_index_info(clones: List[str]) -> Dict[str, List[str]]:
     """Get information on which clones are dirty or clean."""
 
-    index_info = {"clean": [], "dirty": []}
+    index_info: Dict[str, List[str]] = {"clean": [], "dirty": []}
     for clone in clones:
         index_cmd = ["git", "-C", clone, "status", "--short"]
         proc = subprocess.run(index_cmd, check=False, capture_output=True, text=True)

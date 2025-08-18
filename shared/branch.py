@@ -14,8 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 import subprocess
+from typing import Any, Dict, List
 
 from . import (
     INTVDIR,
@@ -28,7 +30,7 @@ from . import (
 )
 
 
-def create_branch(branch_name, clones):
+def create_branch(branch_name: str, clones: List[str]) -> None:
     print(f"Creating branch {branch_name}...")
     for idx, clone in enumerate(clones):
         print(
@@ -53,7 +55,7 @@ def create_branch(branch_name, clones):
             outfile.write(PR_TEMPLATE % branch_name)
 
 
-def main(args, config):
+def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     """Main function for branch verb."""
     cprint("\nBRANCH", colors.OKBLUE)
 

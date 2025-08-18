@@ -14,12 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
+from typing import Any, Dict
 
 from . import colors, cprint, get_branch_info, get_clones, get_index_info
 
 
-def main(args, config):
+def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     """Main function for status verb."""
 
     cprint("\nSTATUS", colors.OKBLUE)
