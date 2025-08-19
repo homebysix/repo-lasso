@@ -14,6 +14,7 @@ from shared import (
     get_branch_info,
     get_clones,
     get_config,
+    get_default_branch,
     get_index_info,
     get_org_repos,
     readable_time,
@@ -296,6 +297,128 @@ class TestShared(unittest.TestCase):
                 for call in print_calls
             )
         )
+
+    @patch("shared.subprocess.run")
+    def test_get_default_branch_success(self, mock_subprocess_run):
+        """Test get_default_branch function with successful upstream HEAD detection."""
+        # Setup mock for successful git symbolic-ref command
+        mock_proc = MagicMock()
+        mock_proc.stdout = "refs/remotes/upstream/main"
+        mock_subprocess_run.return_value = mock_proc
+
+        # Test
+        result = get_default_branch("/path/to/repo")
+
+        # Verify
+        self.assertEqual(result, "main")
+        mock_subprocess_run.assert_called_once_with(
+            [
+                "git",
+                "-C",
+                "/path/to/repo",
+                "symbolic-ref",
+                "refs/remotes/upstream/HEAD",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+    @patch("shared.subprocess.run")
+    def test_get_default_branch_master_branch(self, mock_subprocess_run):
+        """Test get_default_branch function with master as upstream default branch."""
+        # Setup mock for git symbolic-ref command returning master
+        mock_proc = MagicMock()
+        mock_proc.stdout = "refs/remotes/upstream/master"
+        mock_subprocess_run.return_value = mock_proc
+
+        # Test
+        result = get_default_branch("/path/to/repo")
+
+        # Verify
+        self.assertEqual(result, "master")
+        mock_subprocess_run.assert_called_once_with(
+            [
+                "git",
+                "-C",
+                "/path/to/repo",
+                "symbolic-ref",
+                "refs/remotes/upstream/HEAD",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+    @patch("shared.subprocess.run")
+    def test_get_default_branch_custom_branch(self, mock_subprocess_run):
+        """Test get_default_branch function with custom default branch name."""
+        # Setup mock for git symbolic-ref command returning custom branch
+        mock_proc = MagicMock()
+        mock_proc.stdout = "refs/remotes/upstream/develop"
+        mock_subprocess_run.return_value = mock_proc
+
+        # Test
+        result = get_default_branch("/path/to/repo")
+
+        # Verify
+        self.assertEqual(result, "develop")
+
+    @patch("shared.subprocess.run")
+    def test_get_default_branch_with_whitespace(self, mock_subprocess_run):
+        """Test get_default_branch function handles output with whitespace."""
+        # Setup mock for git symbolic-ref command with whitespace
+        mock_proc = MagicMock()
+        mock_proc.stdout = "  refs/remotes/upstream/main\n  "
+        mock_subprocess_run.return_value = mock_proc
+
+        # Test
+        result = get_default_branch("/path/to/repo")
+
+        # Verify - should strip whitespace and extract branch name
+        self.assertEqual(result, "main")
+
+    @patch("shared.subprocess.run")
+    def test_get_default_branch_subprocess_error(self, mock_subprocess_run):
+        """Test get_default_branch function when git command fails."""
+        # Setup mock to raise subprocess.CalledProcessError
+        import subprocess
+
+        mock_subprocess_run.side_effect = subprocess.CalledProcessError(
+            1, "git symbolic-ref"
+        )
+
+        # Test - should raise the exception
+        with self.assertRaises(subprocess.CalledProcessError) as context:
+            get_default_branch("/path/to/repo")
+
+        # Verify exception details
+        self.assertEqual(context.exception.returncode, 1)
+        self.assertEqual(context.exception.cmd, "git symbolic-ref")
+
+    @patch("shared.subprocess.run")
+    def test_get_default_branch_no_upstream_remote(self, mock_subprocess_run):
+        """Test get_default_branch function when upstream remote doesn't exist."""
+        # Setup mock to raise subprocess.CalledProcessError for missing upstream
+        import subprocess
+
+        mock_subprocess_run.side_effect = subprocess.CalledProcessError(
+            128, "git symbolic-ref"
+        )
+
+        # Test - should raise the exception
+        with self.assertRaises(subprocess.CalledProcessError) as context:
+            get_default_branch("/path/to/missing-upstream")
+
+        # Verify exception details
+        self.assertEqual(context.exception.returncode, 128)
+        self.assertEqual(context.exception.cmd, "git symbolic-ref")
+
+    def test_get_default_branch_function_exists(self):
+        """Test that get_default_branch function exists and is callable."""
+        # Basic check that the function was imported correctly
+        self.assertTrue(callable(get_default_branch))
+        self.assertEqual(get_default_branch.__name__, "get_default_branch")
 
 
 if __name__ == "__main__":

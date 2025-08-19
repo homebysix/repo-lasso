@@ -22,10 +22,12 @@ class TestReset(unittest.TestCase):
     @patch("shared.reset.cprint")
     @patch("shared.reset.subprocess.run")
     @patch("shared.reset.os.path.relpath")
+    @patch("shared.reset.get_default_branch")
     @patch("builtins.print")
     def test_main_with_main_branch(
         self,
         mock_print,
+        mock_get_default_branch,
         mock_relpath,
         mock_subprocess_run,
         mock_cprint,
@@ -36,35 +38,27 @@ class TestReset(unittest.TestCase):
         mock_clones = ["/path/to/repo1", "/path/to/repo2"]
         mock_get_clones.return_value = mock_clones
         mock_relpath.side_effect = lambda x: f"repos/{os.path.basename(x)}"
+        mock_get_default_branch.return_value = "main"
 
-        # Mock git branch command output (main branch exists)
-        mock_branch_proc = MagicMock()
-        mock_branch_proc.stdout = "  develop\n* feature-branch\n  main\n"
-
+        # Mock successful subprocess runs
         mock_other_proc = MagicMock()
 
-        # First call returns branch info, others are git operations
-        mock_subprocess_run.side_effect = [
-            mock_branch_proc,  # git branch for repo1
-            mock_other_proc,  # git reset --hard for repo1
-            mock_other_proc,  # git checkout main for repo1
-            mock_other_proc,  # git reset --hard for repo1 (second time)
-            mock_other_proc,  # git clean -xdf for repo1
-            mock_branch_proc,  # git branch for repo2
-            mock_other_proc,  # git reset --hard for repo2
-            mock_other_proc,  # git checkout main for repo2
-            mock_other_proc,  # git reset --hard for repo2 (second time)
-            mock_other_proc,  # git clean -xdf for repo2
-        ]
+        # Each repo needs 4 git operations: reset, checkout, reset, clean
+        mock_subprocess_run.side_effect = [mock_other_proc] * 8
 
         # Run test
         reset.main(self.args, self.config)
 
         # Verify header print
-        mock_cprint.assert_called_once_with("\nSTATUS", reset.colors.OKBLUE)
+        mock_cprint.assert_called_once_with("\nRESET", reset.colors.OKBLUE)
 
         # Verify get_clones was called
         mock_get_clones.assert_called_once_with(self.config)
+
+        # Verify get_default_branch was called for each repo
+        self.assertEqual(mock_get_default_branch.call_count, 2)
+        mock_get_default_branch.assert_any_call("/path/to/repo1")
+        mock_get_default_branch.assert_any_call("/path/to/repo2")
 
         # Verify print statements for each clone
         print_calls = [str(call) for call in mock_print.call_args_list]
@@ -75,17 +69,17 @@ class TestReset(unittest.TestCase):
             any("repos/repo2" in call and "(2 of 2)" in call for call in print_calls)
         )
 
-        # Verify subprocess calls (2 repos × 5 commands each = 10 calls)
-        self.assertEqual(mock_subprocess_run.call_count, 10)
+        # Verify subprocess calls (2 repos × 4 commands each = 8 calls)
+        self.assertEqual(mock_subprocess_run.call_count, 8)
 
-        # Check some specific git commands
+        # Check some specific git commands for first repo
         expected_calls = [
-            # First repo: git branch
-            (["git", "-C", "/path/to/repo1", "branch"],),
             # First repo: git reset --hard
             (["git", "-C", "/path/to/repo1", "reset", "--hard"],),
             # First repo: git checkout main
             (["git", "-C", "/path/to/repo1", "checkout", "main"],),
+            # First repo: git reset --hard (second time)
+            (["git", "-C", "/path/to/repo1", "reset", "--hard"],),
         ]
 
         actual_calls = [call[0] for call in mock_subprocess_run.call_args_list[:3]]
@@ -94,33 +88,34 @@ class TestReset(unittest.TestCase):
     @patch("shared.reset.get_clones")
     @patch("shared.reset.subprocess.run")
     @patch("shared.reset.os.path.relpath")
+    @patch("shared.reset.get_default_branch")
     def test_main_with_master_branch(
-        self, mock_relpath, mock_subprocess_run, mock_get_clones
+        self,
+        mock_get_default_branch,
+        mock_relpath,
+        mock_subprocess_run,
+        mock_get_clones,
     ):
         """Test main function with repositories using 'master' as default branch."""
         # Setup mocks
         mock_clones = ["/path/to/legacy-repo"]
         mock_get_clones.return_value = mock_clones
         mock_relpath.return_value = "repos/legacy-repo"
+        mock_get_default_branch.return_value = "master"
 
-        # Mock git branch command output (no main branch, has master)
-        mock_branch_proc = MagicMock()
-        mock_branch_proc.stdout = "  develop\n* feature-branch\n  master\n"
-
+        # Mock successful subprocess runs
         mock_other_proc = MagicMock()
 
-        mock_subprocess_run.side_effect = [
-            mock_branch_proc,  # git branch
-            mock_other_proc,  # git reset --hard
-            mock_other_proc,  # git checkout master
-            mock_other_proc,  # git reset --hard (second time)
-            mock_other_proc,  # git clean -xdf
-        ]
+        # One repo needs 4 git operations: reset, checkout, reset, clean
+        mock_subprocess_run.side_effect = [mock_other_proc] * 4
 
         with patch("builtins.print"):
             with patch("shared.reset.cprint"):
                 # Run test
                 reset.main(self.args, self.config)
+
+        # Verify get_default_branch was called
+        mock_get_default_branch.assert_called_once_with("/path/to/legacy-repo")
 
         # Verify master branch checkout
         checkout_calls = [
@@ -143,7 +138,7 @@ class TestReset(unittest.TestCase):
                 reset.main(self.args, self.config)
 
         # Verify header print
-        mock_cprint.assert_called_once_with("\nSTATUS", reset.colors.OKBLUE)
+        mock_cprint.assert_called_once_with("\nRESET", reset.colors.OKBLUE)
 
         # Verify get_clones was called
         mock_get_clones.assert_called_once_with(self.config)
@@ -154,37 +149,37 @@ class TestReset(unittest.TestCase):
     @patch("shared.reset.get_clones")
     @patch("shared.reset.subprocess.run")
     @patch("shared.reset.os.path.relpath")
+    @patch("shared.reset.get_default_branch")
     def test_main_git_commands_sequence(
-        self, mock_relpath, mock_subprocess_run, mock_get_clones
+        self,
+        mock_get_default_branch,
+        mock_relpath,
+        mock_subprocess_run,
+        mock_get_clones,
     ):
         """Test that git commands are executed in the correct sequence."""
         # Setup mocks
         mock_clones = ["/path/to/single-repo"]
         mock_get_clones.return_value = mock_clones
         mock_relpath.return_value = "repos/single-repo"
+        mock_get_default_branch.return_value = "main"
 
-        # Mock git branch command output
-        mock_branch_proc = MagicMock()
-        mock_branch_proc.stdout = "  main\n* feature-branch\n"
-
+        # Mock successful subprocess runs
         mock_other_proc = MagicMock()
 
-        mock_subprocess_run.side_effect = [
-            mock_branch_proc,  # git branch
-            mock_other_proc,  # git reset --hard (first)
-            mock_other_proc,  # git checkout main
-            mock_other_proc,  # git reset --hard (second)
-            mock_other_proc,  # git clean -xdf
-        ]
+        # One repo needs 4 git operations: reset, checkout, reset, clean
+        mock_subprocess_run.side_effect = [mock_other_proc] * 4
 
         with patch("builtins.print"):
             with patch("shared.reset.cprint"):
                 # Run test
                 reset.main(self.args, self.config)
 
-        # Verify exact command sequence
+        # Verify get_default_branch was called
+        mock_get_default_branch.assert_called_once_with("/path/to/single-repo")
+
+        # Verify exact command sequence (no longer includes git branch)
         expected_commands = [
-            ["git", "-C", "/path/to/single-repo", "branch"],
             ["git", "-C", "/path/to/single-repo", "reset", "--hard"],
             ["git", "-C", "/path/to/single-repo", "checkout", "main"],
             ["git", "-C", "/path/to/single-repo", "reset", "--hard"],
@@ -194,8 +189,8 @@ class TestReset(unittest.TestCase):
         actual_commands = [call[0][0] for call in mock_subprocess_run.call_args_list]
         self.assertEqual(actual_commands, expected_commands)
 
-        # Verify 5 commands total
-        self.assertEqual(mock_subprocess_run.call_count, 5)
+        # Verify 4 commands total (no longer 5 since git branch is replaced by get_default_branch)
+        self.assertEqual(mock_subprocess_run.call_count, 4)
 
 
 if __name__ == "__main__":
