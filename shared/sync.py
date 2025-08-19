@@ -126,6 +126,26 @@ def create_clones(forks_to_clone: List[Any], config: Dict[str, Any]) -> None:
         ]
         _ = subprocess.run(remote_cmd, check=True, capture_output=True, text=True)
 
+        # Fetch from upstream to establish remote tracking branches
+        fetch_upstream_cmd = ["git", "-C", clone_path, "fetch", "upstream"]
+        _ = subprocess.run(
+            fetch_upstream_cmd, check=True, capture_output=True, text=True
+        )
+
+        # Set upstream HEAD to track the default branch
+        set_upstream_head_cmd = [
+            "git",
+            "-C",
+            clone_path,
+            "remote",
+            "set-head",
+            "upstream",
+            "-a",
+        ]
+        _ = subprocess.run(
+            set_upstream_head_cmd, check=True, capture_output=True, text=True
+        )
+
         # If repo has pre-commit configured, install the hooks
         if os.path.isfile(os.path.join(clone_path, ".pre-commit-config.yaml")):
             try:
