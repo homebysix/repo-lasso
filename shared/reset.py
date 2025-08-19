@@ -25,7 +25,7 @@ from . import colors, cprint, get_clones
 def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     """Main function for reset verb."""
 
-    cprint("\nSTATUS", colors.OKBLUE)
+    cprint("\nRESET", colors.OKBLUE)
 
     clones = get_clones(config)
     for idx, clone in enumerate(clones):
