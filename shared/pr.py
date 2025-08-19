@@ -24,7 +24,7 @@ from typing import Any, Dict, Optional, Tuple
 
 from github import Github, GithubException
 
-from . import INTVDIR, colors, cprint, get_clones
+from . import INTVDIR, colors, cprint, get_clones, get_default_branch
 
 
 def load_pr_template(template_path: str) -> Tuple[str, str]:
@@ -137,11 +137,8 @@ def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
             f"{os.path.relpath(clone)} ({idx + 1} of {len(clones)})..."
         )
 
-        # TODO: Determine this based on GitHub API.
-        branches_cmd = ["git", "-C", clone, "branch"]
-        proc = subprocess.run(branches_cmd, check=True, capture_output=True, text=True)
-        branches = [x.strip() for x in proc.stdout.replace("*", "").split("\n")]
-        default_branch = "main" if "main" in branches else "master"
+        # Get the actual default branch for this repository
+        default_branch = get_default_branch(clone)
 
         curr_branch_cmd = ["git", "-C", clone, "branch", "--show-current"]
         proc = subprocess.run(

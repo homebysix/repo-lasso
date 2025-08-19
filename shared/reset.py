@@ -19,7 +19,7 @@ import os
 import subprocess
 from typing import Any, Dict
 
-from . import colors, cprint, get_clones
+from . import colors, cprint, get_clones, get_default_branch
 
 
 def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
@@ -31,13 +31,8 @@ def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     for idx, clone in enumerate(clones):
         print(f"Resetting {os.path.relpath(clone)} ({idx + 1} of {len(clones)})...")
         try:
-            # TODO: Determine this based on GitHub API.
-            branches_cmd = ["git", "-C", clone, "branch"]
-            proc = subprocess.run(
-                branches_cmd, check=True, capture_output=True, text=True
-            )
-            branches = [x.strip() for x in proc.stdout.replace("*", "").split("\n")]
-            default_branch = "main" if "main" in branches else "master"
+            # Get the actual default branch for this repository
+            default_branch = get_default_branch(clone)
 
             # Initial reset on current branch
             reset_cmd = ["git", "-C", clone, "reset", "--hard"]

@@ -24,7 +24,7 @@ from typing import Any, Dict, Generator, List
 from github import Github
 from github.GithubException import GithubException
 
-from . import REPODIR, colors, cprint, get_clones, get_org_repos
+from . import REPODIR, colors, cprint, get_clones, get_default_branch, get_org_repos
 
 
 def get_user_forks(org_repos: List[Any], config: Dict[str, Any]) -> List[Any]:
@@ -143,11 +143,8 @@ def sync_clone(
         f"Syncing clone {os.path.relpath(clone)} ({idx} of {total})...",
         colors.OKBLUE,
     )
-    # TODO: Determine this based on GitHub API.
-    branches_cmd = ["git", "-C", clone, "branch"]
-    proc = subprocess.run(branches_cmd, check=True, capture_output=True, text=True)
-    branches = [x.strip() for x in proc.stdout.replace("*", "").split("\n")]
-    default_branch = "main" if "main" in branches else "master"
+    # Get the actual default branch for this repository
+    default_branch = get_default_branch(clone)
     curr_branch_cmd = ["git", "-C", clone, "branch", "--show-current"]
     proc = subprocess.run(curr_branch_cmd, check=True, capture_output=True, text=True)
     current_branch = proc.stdout.strip()

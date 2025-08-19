@@ -394,6 +394,22 @@ def get_branch_info(clones: List[str]) -> Dict[str, List[str]]:
     return branch_info
 
 
+def get_default_branch(clone_path: str) -> str:
+    """Get the default branch used by the upstream remote."""
+
+    upstream_cmd = [
+        "git",
+        "-C",
+        clone_path,
+        "symbolic-ref",
+        "refs/remotes/upstream/HEAD",
+    ]
+    proc = subprocess.run(upstream_cmd, check=True, capture_output=True, text=True)
+
+    # Output format: "refs/remotes/upstream/main" -> extract "main"
+    return proc.stdout.strip().split("/")[-1]
+
+
 def get_index_info(clones: List[str]) -> Dict[str, List[str]]:
     """Get information on which clones are dirty or clean."""
 
