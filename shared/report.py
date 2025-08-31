@@ -166,8 +166,8 @@ def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
                     .replace("/pull/", "#")
                 )
                 md_data += (
-                    f"\n| [{shortened_pr}]({pr["html_url"]})"
-                    f" | {pr["created_at"]} | {status} |"
+                    f"\n| [{shortened_pr}]({pr['html_url']})"
+                    f" | {pr['created_at']} | {status} |"
                 )
             md_data += "\n\n---"
 
