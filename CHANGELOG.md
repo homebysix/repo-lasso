@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file. This projec
 - Python function typing to help Repo Lasso developers and contributors.
 - Better determination of default branch names.
 
+### Changed
+
+- Changed from https to ssh for cloning operations.
+
 ## [1.2.0] - 2024-06-23
 
 ### Fixed

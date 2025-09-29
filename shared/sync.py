@@ -113,7 +113,7 @@ def create_clones(forks_to_clone: List[Any], config: Dict[str, Any]) -> None:
             f"({idx + 1} of {len(forks_to_clone)})..."
         )
         clone_path = os.path.join(REPODIR, config["github_org"], fork.name)
-        clone_cmd = ["git", "clone", "--depth=1", fork.ssh_url, clone_path]
+        clone_cmd = ["git", "clone", "--depth=1", fork.clone_url, clone_path]
         _ = subprocess.run(clone_cmd, check=True, capture_output=True, text=True)
         remote_cmd = [
             "git",
@@ -122,7 +122,7 @@ def create_clones(forks_to_clone: List[Any], config: Dict[str, Any]) -> None:
             "remote",
             "add",
             "upstream",
-            fork.parent.ssh_url,
+            fork.parent.clone_url,
         ]
         _ = subprocess.run(remote_cmd, check=True, capture_output=True, text=True)
 

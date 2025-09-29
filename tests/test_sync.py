@@ -362,14 +362,14 @@ class TestSync(unittest.TestCase):
         mock_fork1 = MagicMock()
         mock_fork1.full_name = "testuser/repo1"
         mock_fork1.name = "repo1"
-        mock_fork1.ssh_url = "git@github.com:testuser/repo1.git"
-        mock_fork1.parent.ssh_url = "git@github.com:testorg/repo1.git"
+        mock_fork1.clone_url = "https://github.com/testuser/repo1.git"
+        mock_fork1.parent.clone_url = "https://github.com/testorg/repo1.git"
 
         mock_fork2 = MagicMock()
         mock_fork2.full_name = "testuser/repo2"
         mock_fork2.name = "repo2"
-        mock_fork2.ssh_url = "git@github.com:testuser/repo2.git"
-        mock_fork2.parent.ssh_url = "git@github.com:testorg/repo2.git"
+        mock_fork2.clone_url = "https://github.com/testuser/repo2.git"
+        mock_fork2.parent.clone_url = "https://github.com/testorg/repo2.git"
 
         forks_to_clone = [mock_fork1, mock_fork2]
 
@@ -471,8 +471,8 @@ class TestSync(unittest.TestCase):
         mock_fork = MagicMock()
         mock_fork.full_name = "testuser/repo1"
         mock_fork.name = "repo1"
-        mock_fork.ssh_url = "git@github.com:testuser/repo1.git"
-        mock_fork.parent.ssh_url = "git@github.com:testorg/repo1.git"
+        mock_fork.clone_url = "https://github.com/testuser/repo1.git"
+        mock_fork.parent.clone_url = "https://github.com/testorg/repo1.git"
 
         forks_to_clone = [mock_fork]
 
@@ -517,8 +517,8 @@ class TestSync(unittest.TestCase):
         mock_fork = MagicMock()
         mock_fork.full_name = "testuser/repo1"
         mock_fork.name = "repo1"
-        mock_fork.ssh_url = "git@github.com:testuser/repo1.git"
-        mock_fork.parent.ssh_url = "git@github.com:testorg/repo1.git"
+        mock_fork.clone_url = "https://github.com/testuser/repo1.git"
+        mock_fork.parent.clone_url = "https://github.com/testorg/repo1.git"
 
         forks_to_clone = [mock_fork]
 
@@ -559,8 +559,8 @@ class TestSync(unittest.TestCase):
         mock_fork = MagicMock()
         mock_fork.full_name = "testuser/repo1"
         mock_fork.name = "repo1"
-        mock_fork.ssh_url = "git@github.com:testuser/repo1.git"
-        mock_fork.parent.ssh_url = "git@github.com:testorg/repo1.git"
+        mock_fork.clone_url = "https://github.com/testuser/repo1.git"
+        mock_fork.parent.clone_url = "https://github.com/testorg/repo1.git"
 
         forks_to_clone = [mock_fork]
 
