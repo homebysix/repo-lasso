@@ -62,7 +62,7 @@ def create_user_forks(
         f"OK to create forks in the {config['github_username']} GitHub account? [y/n] "
     )
     if not response.lower().startswith("y"):
-        cprint("Did not consent to fork repos. Exiting.", colors.WARNING)
+        cprint("ERROR: Did not consent to fork repos. Exiting.", colors.FAIL)
         cprint(
             "TIP: You can set the `--excluded-repo` CLI parameter or the "
             "`excluded_repos` key in your config file to ignore specific "
@@ -99,7 +99,7 @@ def create_clones(forks_to_clone: List[Any], config: Dict[str, Any]) -> None:
     )
     response = input("OK to create clones? [y/n] ")
     if not response.lower().startswith("y"):
-        cprint("Did not consent to clone forks. Exiting.", colors.WARNING)
+        cprint("ERROR: Did not consent to clone forks. Exiting.", colors.FAIL)
         cprint(
             "TIP: You can set the `--excluded-repo` CLI parameter or the "
             "`excluded_repos` key in your config file to ignore specific "

@@ -279,10 +279,13 @@ class TestSync(unittest.TestCase):
         mock_exit.assert_called_once_with(0)
         mock_repo.create_fork.assert_not_called()
 
-        # Verify warning message was printed
+        # Verify error message was printed
         cprint_calls = [call for call in mock_cprint.call_args_list]
         self.assertTrue(
-            any("Did not consent to fork repos" in str(call) for call in cprint_calls)
+            any(
+                "ERROR: Did not consent to fork repos" in str(call)
+                for call in cprint_calls
+            )
         )
 
         # Verify regular print was used for repo list
@@ -446,10 +449,13 @@ class TestSync(unittest.TestCase):
         self.assertEqual(context.exception.code, 0)
         mock_exit.assert_called_once_with(0)
 
-        # Verify warning message was printed
+        # Verify error message was printed
         cprint_calls = [call for call in mock_cprint.call_args_list]
         self.assertTrue(
-            any("Did not consent to clone forks" in str(call) for call in cprint_calls)
+            any(
+                "ERROR: Did not consent to clone forks" in str(call)
+                for call in cprint_calls
+            )
         )
 
         # Verify regular print was used for clone list
