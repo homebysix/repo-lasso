@@ -213,7 +213,7 @@ def get_config(path: str, args: argparse.Namespace) -> Dict[str, Any]:
             with open(path, "rb") as infile:
                 config = json.load(infile)
         except json.decoder.JSONDecodeError:
-            print("WARNING: Unable to read configuration.", colors.WARNING)
+            cprint("WARNING: Unable to read configuration.", colors.WARNING)
             config = {}
     else:
         print(f"Creating new config file at {os.path.relpath(path)}...")
