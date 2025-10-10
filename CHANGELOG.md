@@ -10,12 +10,13 @@ All notable changes to this project will be documented in this file. This projec
 
 - More graceful handling of Git fetch, pull, and push errors.
 - Greatly improved unit test coverage.
-- Python function typing to help Repo Lasso developers and contributors.
 - Better determination of default branch names.
 
 ### Changed
 
 - Changed from https to ssh for cloning operations.
+- Only fetch default branches on sync, to avoid issues with case-sensitive branch names.
+- Python function typing to help Repo Lasso developers and contributors.
 
 ## [1.2.0] - 2024-06-23
 
