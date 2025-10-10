@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file. This projec
 
 ### Fixed
 
+- Fixed issue that was causing `report` to skip updating existing pull requests.
 - More graceful handling of Git fetch, pull, and push errors.
 - Greatly improved unit test coverage.
 - Better determination of default branch names.

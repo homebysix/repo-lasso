@@ -175,14 +175,15 @@ def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
                 if not report_data[branch].get("pull_requests"):
                     report_data[branch]["pull_requests"] = []
 
-                # Add PRs that aren't already in the report
-                existing_urls = {
-                    x["html_url"] for x in report_data[branch]["pull_requests"]
+                # Update existing PRs or add new ones
+                existing_prs = {
+                    x["html_url"]: x for x in report_data[branch]["pull_requests"]
                 }
                 for pr in prs:
-                    if pr["html_url"] not in existing_urls:
-                        report_data[branch]["pull_requests"].append(pr)
-                        existing_urls.add(pr["html_url"])
+                    existing_prs[pr["html_url"]] = pr
+
+                # Replace the PR list with updated data
+                report_data[branch]["pull_requests"] = list(existing_prs.values())
 
         # Write the final report data
         with open(report_path, "w", encoding="utf-8") as outfile:
