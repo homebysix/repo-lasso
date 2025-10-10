@@ -15,10 +15,11 @@
 # limitations under the License.
 
 import argparse
+import asyncio
 import json
 import os
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from . import (
     INTVDIR,
@@ -29,6 +30,74 @@ from . import (
     cprint,
     get_org_repos,
 )
+
+
+async def process_repo_prs(
+    repo: Any,
+    intv_branches: List[str],
+    config: Dict[str, Any],
+    idx: int,
+    total: int,
+) -> tuple[str, Dict[str, List[Dict[str, Any]]]]:
+    """Process PRs for a single repo asynchronously.
+
+    Args:
+        repo: GitHub repository object
+        intv_branches: List of initiative branch names
+        config: Configuration dictionary
+        idx: Index of this repo (1-based)
+        total: Total number of repos
+
+    Returns:
+        Tuple of (repo_name, dictionary mapping branch names to lists of PR data)
+    """
+
+    # Run the blocking PyGithub calls in a thread
+    def _get_repo_prs():
+        result = {}
+        repo_prs = repo.get_pulls(state="all", sort="created")
+
+        for branch in intv_branches:
+            branch_prs = [
+                x
+                for x in repo_prs
+                if x.user.login == config["github_username"]
+                if x.head.ref == branch
+            ]
+            if not branch_prs:
+                continue
+
+            result[branch] = []
+
+            for branch_pr in branch_prs:
+                pr = {
+                    "html_url": branch_pr.html_url,
+                    "state": branch_pr.state,
+                    "merged": branch_pr.merged,
+                    "created_at": str(branch_pr.created_at),
+                    "updated_at": str(branch_pr.updated_at),
+                    "closed_at": str(branch_pr.closed_at),
+                    "merged_at": str(branch_pr.merged_at),
+                    "additions": branch_pr.additions,
+                    "deletions": branch_pr.deletions,
+                    "changed_files": branch_pr.changed_files,
+                    "mergeable": branch_pr.mergeable,
+                }
+                result[branch].append(pr)
+
+        return result
+
+    # Run in thread pool to avoid blocking
+    branch_data = await asyncio.to_thread(_get_repo_prs)
+
+    # Print completion with found branches
+    if branch_data:
+        branches_str = ", ".join(branch_data.keys())
+        print(f"{repo.full_name} ({idx}/{total}) - Found: {branches_str}")
+    else:
+        print(f"{repo.full_name} ({idx}/{total}) - No matching PRs")
+
+    return repo.full_name, branch_data
 
 
 def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
@@ -56,7 +125,7 @@ def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     report_path = os.path.join(REPORTDIR, config["github_org"] + ".json")
     report_md = os.path.join(REPORTDIR, config["github_org"] + ".md")
     if os.path.isfile(report_path):
-        with open(report_path, "rb") as infile:
+        with open(report_path, encoding="utf-8") as infile:
             report_data = json.load(infile)
         # Create files in initiatives directory for each branch in an existing report
         for r_branch in report_data:
@@ -77,50 +146,47 @@ def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
 
     # Check status of pull requests for each branch
     repos = get_org_repos(config, args)
-    try:
-        for idx, repo in enumerate(repos):
-            print(
-                f"Checking PRs for repo {repo.full_name} ({idx + 1} of {len(repos)})..."
+    total_repos = len(repos)
+
+    print(f"Processing {total_repos} repositories concurrently...")
+
+    async def process_all_repos():
+        """Process all repos concurrently using asyncio.gather."""
+        tasks = []
+        for idx, repo in enumerate(repos, start=1):
+            tasks.append(
+                process_repo_prs(repo, intv_branches, config, idx, total_repos)
             )
-            repo_prs = repo.get_pulls(state="all", sort="created")
-            for idx, branch in enumerate(intv_branches):
-                branch_prs = [
-                    x
-                    for x in repo_prs
-                    if x.user.login == config["github_username"]
-                    if x.head.ref == branch
-                ]
-                if not branch_prs:
-                    continue
-                print(f"  Found {branch}")
-                for branch_pr in branch_prs:
-                    pr = {
-                        "html_url": branch_pr.html_url,
-                        "state": branch_pr.state,
-                        "merged": branch_pr.merged,
-                        "created_at": str(branch_pr.created_at),
-                        "updated_at": str(branch_pr.updated_at),
-                        "closed_at": str(branch_pr.closed_at),
-                        "merged_at": str(branch_pr.merged_at),
-                        "additions": branch_pr.additions,
-                        "deletions": branch_pr.deletions,
-                        "changed_files": branch_pr.changed_files,
-                        "mergeable": branch_pr.mergeable,
-                    }
 
-                    # Update report data
-                    if branch not in report_data:
-                        report_data[branch] = {}
-                    if not report_data[branch].get("pull_requests"):
-                        report_data[branch]["pull_requests"] = [pr]
-                    elif branch_pr.html_url not in [
-                        x["html_url"] for x in report_data[branch]["pull_requests"]
-                    ]:
+        # Gather all results concurrently
+        return await asyncio.gather(*tasks)
+
+    try:
+        # Run the async processing
+        all_repo_results = asyncio.run(process_all_repos())
+
+        print(f"\nCompleted processing {total_repos} repositories.")
+
+        # Merge all results into report_data
+        for _repo_name, repo_result in all_repo_results:
+            for branch, prs in repo_result.items():
+                if branch not in report_data:
+                    report_data[branch] = {}
+                if not report_data[branch].get("pull_requests"):
+                    report_data[branch]["pull_requests"] = []
+
+                # Add PRs that aren't already in the report
+                existing_urls = {
+                    x["html_url"] for x in report_data[branch]["pull_requests"]
+                }
+                for pr in prs:
+                    if pr["html_url"] not in existing_urls:
                         report_data[branch]["pull_requests"].append(pr)
+                        existing_urls.add(pr["html_url"])
 
-                # Update report json and markdown after each initiative is processed
-                with open(report_path, "w", encoding="utf-8") as outfile:
-                    outfile.write(json.dumps(report_data, indent=4))
+        # Write the final report data
+        with open(report_path, "w", encoding="utf-8") as outfile:
+            outfile.write(json.dumps(report_data, indent=4))
         cprint(f"Wrote data: {os.path.relpath(report_path)}", colors.OKGREEN)
 
     except KeyboardInterrupt:

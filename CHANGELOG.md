@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file. This projec
 
 ## [Unreleased]
 
+### Added
+
+- Concurrent processing for `report` verb — significantly faster for organizations with a large number of repos.
+
 ### Fixed
 
 - More graceful handling of Git fetch, pull, and push errors.
