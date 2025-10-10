@@ -126,8 +126,19 @@ def create_clones(forks_to_clone: List[Any], config: Dict[str, Any]) -> None:
         ]
         _ = subprocess.run(remote_cmd, check=True, capture_output=True, text=True)
 
-        # Fetch from upstream to establish remote tracking branches
-        fetch_upstream_cmd = ["git", "-C", clone_path, "fetch", "upstream"]
+        # Get the default branch from the upstream repository
+        upstream_default_branch = fork.parent.default_branch
+
+        # Fetch only the default branch from upstream to avoid issues with
+        # case-insensitive filesystems and conflicting branch names
+        fetch_upstream_cmd = [
+            "git",
+            "-C",
+            clone_path,
+            "fetch",
+            "upstream",
+            upstream_default_branch,
+        ]
         _ = subprocess.run(
             fetch_upstream_cmd, check=True, capture_output=True, text=True
         )
@@ -140,7 +151,7 @@ def create_clones(forks_to_clone: List[Any], config: Dict[str, Any]) -> None:
             "remote",
             "set-head",
             "upstream",
-            "-a",
+            upstream_default_branch,
         ]
         _ = subprocess.run(
             set_upstream_head_cmd, check=True, capture_output=True, text=True
