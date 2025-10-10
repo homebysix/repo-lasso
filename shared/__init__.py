@@ -189,7 +189,15 @@ def build_argument_parser() -> argparse.ArgumentParser:
 
 
 class colors:
-    """Colors to use when displaying output."""
+    """ANSI color codes for terminal output. Use with cprint() for consistent formatting.
+
+    HEADER (magenta): Logo, major milestones, completion messages
+    OKBLUE (blue): Section headers, status confirmations
+    OKGREEN (green): Success messages, helpful tips
+    WARNING (yellow): Non-critical warnings, rate limits
+    FAIL (red): Errors, critical failures
+    ENDC: Reset color (auto-applied by cprint)
+    """
 
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
