@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file. This projec
 ### Added
 
 - Concurrent processing for `report` verb — significantly faster for organizations with a large number of repos.
+- More information displayed during initial fork retrieval.
 
 ### Fixed
 

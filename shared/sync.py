@@ -33,12 +33,13 @@ def get_user_forks(org_repos: List[Any], config: Dict[str, Any]) -> List[Any]:
     # Object for communicating with GitHub API
     g = Github(config["github_token"])
 
-    org_full_names = [x.full_name for x in org_repos]
-    user_forks = []
-    for repo in g.get_user().get_repos(type="forks"):
+    org_full_names: List[str] = [x.full_name for x in org_repos]
+    user_forks: List[Github.Repository.Repository] = []
+    for idx, repo in enumerate(g.get_user().get_repos(type="forks")):
         if not repo.fork:
             continue
         if repo.parent.full_name in org_full_names:
+            print(f"Retrieved {repo.full_name} info (fork {len(user_forks) + 1})...")
             user_forks.append(repo)
 
     f_noun = "fork" if len(user_forks) == 1 else "forks"
