@@ -33,7 +33,7 @@ You'll need to have these items installed:
 - Git
 - Python 3 (virtualenv optional)
 
-You'll also need a GitHub account, and a [personal access token](https://github.com/settings/tokens) associated with that account. The token needs only the `public_repo` scope enabled.
+You'll also need a GitHub account, and a [personal access token](https://github.com/settings/tokens) associated with that account. **The token must be a "classic" token, and needs only the `public_repo` scope enabled.**
 
 I also recommend generating an SSH key on the device you plan to use Repo Lasso on, and [putting that SSH key on GitHub](https://github.com/settings/keys).
 
@@ -51,7 +51,7 @@ Then install the Python requirements (you can do this within a virtualenv, if yo
 
 ### Configuration
 
-In order to do its work, Repo Lasso needs to know a few things like your GitHub username, the GitHub organization you'll be targeting, and your GitHub personal access token. Repo Lasso stores these facts in a file named `config.json`. There are three ways to configure this file:
+In order to do its work, Repo Lasso needs to know a few things like your GitHub username, the GitHub organization you'll be targeting, and your GitHub classic personal access token. Repo Lasso stores these facts in a file named `config.json`. There are three ways to configure this file:
 
 1. **Interactively:** The first time you run one of the commands below, you'll be prompted for any missing configuration details. This is the easiest way to get started.
 
@@ -59,7 +59,7 @@ In order to do its work, Repo Lasso needs to know a few things like your GitHub 
 
     - `--gh-user`: Your GitHub username
     - `--gh-org`: The GitHub organization you'll be submitting changes to
-    - `--gh-token`: Your GitHub personal access token (with `public_repo` scope)
+    - `--gh-token`: Your GitHub classic personal access token (with `public_repo` scope)
 
 1. **Manually:** You may create the `config.json` file at the root of the cloned repo (on the same level as this README) manually, if you prefer. Here's a template:
 
