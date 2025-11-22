@@ -206,6 +206,8 @@ Here's an example of a markdown file that results (rendered by [Marked 2](https:
 
 ## Tips and troubleshooting
 
+- See this web post for a full walkthrough of a Repo Lasso initiative: [Using Repo Lasso to Submit Pull Requests in Bulk](https://www.elliotjordan.com/posts/repo-lasso/)
+
 - There is a `./RepoLasso.py status` subcommand that will show you the current branch/change status of all your clones.
 
 - Careful submitting pull requests on initiatives that enact similar changes across the same files, because you might create merge conflicts.
