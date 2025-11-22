@@ -24,7 +24,14 @@ from typing import Any, Dict, Optional, Tuple
 
 from github import Github, GithubException
 
-from . import INTVDIR, colors, cprint, get_clones, get_default_branch
+from . import (
+    INTVDIR,
+    colors,
+    cprint,
+    get_clones,
+    get_default_branch,
+    github_rate_limit_wait,
+)
 
 
 def load_pr_template(template_path: str) -> Tuple[str, str]:
@@ -63,6 +70,8 @@ def open_pull_request(
     org = g.get_organization(config["github_org"])
     upstream_repo = org.get_repo(os.path.split(clone)[1])
     try:
+        github_rate_limit_wait(config)
+
         pr = upstream_repo.create_pull(
             base=base,
             head=f"{g.get_user().login}:{head}",
@@ -73,15 +82,7 @@ def open_pull_request(
         # Proactively avoid rate limiting
         sleep(3)
     except GithubException as err:
-        if err.status == 403:
-            cprint(
-                "WARNING: Rate limited. Waiting 60 seconds before continuing.",
-                colors.WARNING,
-                2,
-            )
-            cprint(str(g.get_rate_limit()), colors.WARNING, 2)
-            sleep(60)
-        elif err.status == 422:
+        if err.status == 422:
             cprint(
                 "WARNING: A pull request may already exist for this branch. Skipping.",
                 colors.WARNING,

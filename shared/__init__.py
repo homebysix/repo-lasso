@@ -41,6 +41,7 @@ import subprocess
 from getpass import getpass
 from glob import glob
 from textwrap import dedent, indent
+from time import sleep
 from typing import Any, Dict, List
 
 from github import Github, enable_console_debug_logging
@@ -432,3 +433,24 @@ def get_index_info(clones: List[str]) -> Dict[str, List[str]]:
             index_info["clean"].append(clone)
 
     return index_info
+
+
+def github_rate_limit_wait(config: Dict[str, Any]) -> None:
+    """Waits for the GitHub API to accept requests."""
+
+    g = Github(config["github_token"])
+
+    attempt = 1
+    rate_limit = g.get_rate_limit().rate
+    while rate_limit.remaining == 0:
+        sleep_time = attempt**2
+        cprint(
+            f"WARNING: Rate limited. Waiting {sleep_time} seconds before continuing.",
+            colors.WARNING,
+            2,
+        )
+        sleep(sleep_time)
+        attempt += 1
+        rate_limit = g.get_rate_limit().rate
+
+    return
