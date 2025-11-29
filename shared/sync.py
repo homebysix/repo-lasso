@@ -21,10 +21,17 @@ import sys
 from multiprocessing.pool import ThreadPool
 from typing import Any, Dict, Generator, List
 
-from github import Github
-from github.GithubException import GithubException
+from github import Github, GithubException
 
-from . import REPODIR, colors, cprint, get_clones, get_default_branch, get_org_repos
+from . import (
+    REPODIR,
+    colors,
+    cprint,
+    get_clones,
+    get_default_branch,
+    get_org_repos,
+    github_rate_limit_wait,
+)
 
 
 def get_user_forks(org_repos: List[Any], config: Dict[str, Any]) -> List[Any]:
@@ -74,6 +81,7 @@ def create_user_forks(
     for idx, repo in enumerate(repos_to_fork):
         print(f"Forking repo {repo.full_name} ({idx + 1} of {len(repos_to_fork)})...")
         try:
+            github_rate_limit_wait(config)
             yield repo.create_fork()
         except GithubException as err:
             cprint(
