@@ -7,7 +7,9 @@ from unittest.mock import MagicMock, mock_open, patch
 # Add the parent directory to sys.path to import the shared module
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from shared import pr
+from github import BadCredentialsException, GithubException, RateLimitExceededException
+
+from shared import RateLimitExceededError, pr
 
 
 class TestPr(unittest.TestCase):
@@ -42,11 +44,12 @@ class TestPr(unittest.TestCase):
             with self.assertRaises(UnboundLocalError):
                 pr.load_pr_template("fake_path.md")
 
+    @patch("shared.pr.github_rate_limit_wait")
     @patch("shared.pr.sleep")
     @patch("shared.pr.Github")
     @patch("shared.pr.os.path.isfile")
     def test_open_pull_request_success(
-        self, mock_isfile, mock_github_class, mock_sleep
+        self, mock_isfile, mock_github_class, mock_sleep, mock_rate_limit_wait
     ):
         """Test successful pull request creation."""
         # Setup mocks
@@ -81,12 +84,14 @@ class TestPr(unittest.TestCase):
             base="main", head="testuser:feature-branch", title="feature-branch", body=""
         )
         mock_sleep.assert_called_once_with(3)
+        mock_rate_limit_wait.assert_called_once_with(self.config)
 
+    @patch("shared.pr.github_rate_limit_wait")
     @patch("shared.pr.Github")
     @patch("shared.pr.os.path.isfile")
     @patch("shared.pr.load_pr_template")
     def test_open_pull_request_with_template(
-        self, mock_load_template, mock_isfile, mock_github_class
+        self, mock_load_template, mock_isfile, mock_github_class, mock_rate_limit_wait
     ):
         """Test pull request creation with template file."""
         # Setup mocks
@@ -254,6 +259,277 @@ class TestPr(unittest.TestCase):
         mock_log_initiative.assert_called_once_with(
             mock_pr_obj, "feature-branch", self.config
         )
+
+    @patch("shared.pr.github_rate_limit_wait")
+    @patch("shared.pr.Github")
+    @patch("shared.pr.os.path.isfile")
+    def test_open_pull_request_rate_limit_exceeded_error(
+        self, mock_isfile, mock_github_class, mock_rate_limit_wait
+    ):
+        """Test pull request creation when rate limit wait raises error."""
+        # Setup mocks
+        mock_isfile.return_value = False
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        mock_user = MagicMock()
+        mock_user.login = "testuser"
+        mock_github.get_user.return_value = mock_user
+
+        mock_org = MagicMock()
+        mock_github.get_organization.return_value = mock_org
+
+        mock_repo = MagicMock()
+        mock_org.get_repo.return_value = mock_repo
+
+        # Rate limit wait raises error
+        mock_rate_limit_wait.side_effect = RateLimitExceededError(
+            "Rate limit exceeded after 10 attempts"
+        )
+
+        with patch("builtins.print"):
+            with self.assertRaises(RateLimitExceededError):
+                pr.open_pull_request(
+                    "/path/to/testrepo",
+                    "main",
+                    "feature-branch",
+                    self.args,
+                    self.config,
+                )
+
+    @patch("shared.pr.github_rate_limit_wait")
+    @patch("shared.pr.Github")
+    @patch("shared.pr.os.path.isfile")
+    def test_open_pull_request_rate_limit_exception(
+        self, mock_isfile, mock_github_class, mock_rate_limit_wait
+    ):
+        """Test pull request creation when GitHub raises RateLimitExceededException."""
+        # Setup mocks
+        mock_isfile.return_value = False
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        mock_user = MagicMock()
+        mock_user.login = "testuser"
+        mock_github.get_user.return_value = mock_user
+
+        mock_org = MagicMock()
+        mock_github.get_organization.return_value = mock_org
+
+        mock_repo = MagicMock()
+        mock_org.get_repo.return_value = mock_repo
+
+        # create_pull raises RateLimitExceededException
+        mock_repo.create_pull.side_effect = RateLimitExceededException(403, {}, {})
+
+        mock_rate_limit = MagicMock()
+        mock_github.get_rate_limit.return_value = mock_rate_limit
+
+        with patch("builtins.print"):
+            with self.assertRaises(RateLimitExceededException):
+                pr.open_pull_request(
+                    "/path/to/testrepo",
+                    "main",
+                    "feature-branch",
+                    self.args,
+                    self.config,
+                )
+
+    @patch("shared.pr.github_rate_limit_wait")
+    @patch("shared.pr.Github")
+    @patch("shared.pr.os.path.isfile")
+    def test_open_pull_request_bad_credentials(
+        self, mock_isfile, mock_github_class, mock_rate_limit_wait
+    ):
+        """Test pull request creation with bad credentials."""
+        # Setup mocks
+        mock_isfile.return_value = False
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        mock_user = MagicMock()
+        mock_user.login = "testuser"
+        mock_github.get_user.return_value = mock_user
+
+        mock_org = MagicMock()
+        mock_github.get_organization.return_value = mock_org
+
+        mock_repo = MagicMock()
+        mock_org.get_repo.return_value = mock_repo
+
+        # create_pull raises BadCredentialsException
+        error_data = {"message": "Bad credentials"}
+        mock_repo.create_pull.side_effect = BadCredentialsException(401, error_data, {})
+
+        with patch("builtins.print"):
+            with self.assertRaises(BadCredentialsException):
+                pr.open_pull_request(
+                    "/path/to/testrepo",
+                    "main",
+                    "feature-branch",
+                    self.args,
+                    self.config,
+                )
+
+    @patch("shared.pr.github_rate_limit_wait")
+    @patch("shared.pr.Github")
+    @patch("shared.pr.os.path.isfile")
+    def test_open_pull_request_permission_denied(
+        self, mock_isfile, mock_github_class, mock_rate_limit_wait
+    ):
+        """Test pull request creation with permission denied error."""
+        # Setup mocks
+        mock_isfile.return_value = False
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        mock_user = MagicMock()
+        mock_user.login = "testuser"
+        mock_github.get_user.return_value = mock_user
+
+        mock_org = MagicMock()
+        mock_github.get_organization.return_value = mock_org
+
+        mock_repo = MagicMock()
+        mock_org.get_repo.return_value = mock_repo
+
+        # create_pull raises 403 with "not accessible" message
+        error_data = {
+            "message": "Resource not accessible by personal access token",
+            "documentation_url": "https://docs.github.com/rest/pulls/pulls#create-a-pull-request",
+        }
+        mock_repo.create_pull.side_effect = GithubException(403, error_data, {})
+
+        with patch("builtins.print"):
+            with self.assertRaises(GithubException):
+                pr.open_pull_request(
+                    "/path/to/testrepo",
+                    "main",
+                    "feature-branch",
+                    self.args,
+                    self.config,
+                )
+
+    @patch("shared.pr.github_rate_limit_wait")
+    @patch("shared.pr.Github")
+    @patch("shared.pr.os.path.isfile")
+    def test_open_pull_request_other_403_error(
+        self, mock_isfile, mock_github_class, mock_rate_limit_wait
+    ):
+        """Test pull request creation with other 403 error (not permission denied)."""
+        # Setup mocks
+        mock_isfile.return_value = False
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        mock_user = MagicMock()
+        mock_user.login = "testuser"
+        mock_github.get_user.return_value = mock_user
+
+        mock_org = MagicMock()
+        mock_github.get_organization.return_value = mock_org
+
+        mock_repo = MagicMock()
+        mock_org.get_repo.return_value = mock_repo
+
+        # create_pull raises 403 with different message
+        error_data = {"message": "Some other forbidden error"}
+        mock_repo.create_pull.side_effect = GithubException(403, error_data, {})
+
+        with patch("builtins.print"):
+            with self.assertRaises(GithubException):
+                pr.open_pull_request(
+                    "/path/to/testrepo",
+                    "main",
+                    "feature-branch",
+                    self.args,
+                    self.config,
+                )
+
+    @patch("shared.pr.github_rate_limit_wait")
+    @patch("shared.pr.sleep")
+    @patch("shared.pr.Github")
+    @patch("shared.pr.os.path.isfile")
+    def test_open_pull_request_duplicate_pr_422(
+        self, mock_isfile, mock_github_class, mock_sleep, mock_rate_limit_wait
+    ):
+        """Test pull request creation when PR already exists (422)."""
+        # Setup mocks
+        mock_isfile.return_value = False
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        mock_user = MagicMock()
+        mock_user.login = "testuser"
+        mock_github.get_user.return_value = mock_user
+
+        mock_org = MagicMock()
+        mock_github.get_organization.return_value = mock_org
+
+        mock_repo = MagicMock()
+        mock_org.get_repo.return_value = mock_repo
+
+        # create_pull raises 422 error
+        error_data = {"message": "Validation Failed"}
+        mock_repo.create_pull.side_effect = GithubException(422, error_data, {})
+
+        with patch("builtins.print"):
+            result = pr.open_pull_request(
+                "/path/to/testrepo",
+                "main",
+                "feature-branch",
+                self.args,
+                self.config,
+            )
+
+        # Should return None but not raise
+        self.assertIsNone(result)
+
+    @patch("shared.pr.github_rate_limit_wait")
+    @patch("shared.pr.sleep")
+    @patch("shared.pr.Github")
+    @patch("shared.pr.os.path.isfile")
+    def test_open_pull_request_other_github_error(
+        self, mock_isfile, mock_github_class, mock_sleep, mock_rate_limit_wait
+    ):
+        """Test pull request creation with other GitHub errors."""
+        # Setup mocks
+        mock_isfile.return_value = False
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        mock_user = MagicMock()
+        mock_user.login = "testuser"
+        mock_github.get_user.return_value = mock_user
+
+        mock_org = MagicMock()
+        mock_github.get_organization.return_value = mock_org
+
+        mock_repo = MagicMock()
+        mock_org.get_repo.return_value = mock_repo
+
+        # create_pull raises 500 error
+        error_data = {"message": "Internal Server Error"}
+        mock_repo.create_pull.side_effect = GithubException(500, error_data, {})
+
+        with patch("builtins.print"):
+            result = pr.open_pull_request(
+                "/path/to/testrepo",
+                "main",
+                "feature-branch",
+                self.args,
+                self.config,
+            )
+
+        # Should return None but not raise
+        self.assertIsNone(result)
 
 
 if __name__ == "__main__":

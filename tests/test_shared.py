@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from shared import (
+    RateLimitExceededError,
     build_argument_parser,
     colors,
     cprint,
@@ -17,6 +18,7 @@ from shared import (
     get_default_branch,
     get_index_info,
     get_org_repos,
+    github_rate_limit_wait,
     readable_time,
     trim_leading_org,
 )
@@ -303,6 +305,7 @@ class TestShared(unittest.TestCase):
         """Test get_default_branch function with successful upstream HEAD detection."""
         # Setup mock for successful git symbolic-ref command
         mock_proc = MagicMock()
+        mock_proc.returncode = 0
         mock_proc.stdout = "refs/remotes/upstream/main"
         mock_subprocess_run.return_value = mock_proc
 
@@ -319,7 +322,7 @@ class TestShared(unittest.TestCase):
                 "symbolic-ref",
                 "refs/remotes/upstream/HEAD",
             ],
-            check=True,
+            check=False,
             capture_output=True,
             text=True,
         )
@@ -329,6 +332,7 @@ class TestShared(unittest.TestCase):
         """Test get_default_branch function with master as upstream default branch."""
         # Setup mock for git symbolic-ref command returning master
         mock_proc = MagicMock()
+        mock_proc.returncode = 0
         mock_proc.stdout = "refs/remotes/upstream/master"
         mock_subprocess_run.return_value = mock_proc
 
@@ -345,7 +349,7 @@ class TestShared(unittest.TestCase):
                 "symbolic-ref",
                 "refs/remotes/upstream/HEAD",
             ],
-            check=True,
+            check=False,
             capture_output=True,
             text=True,
         )
@@ -355,6 +359,7 @@ class TestShared(unittest.TestCase):
         """Test get_default_branch function with custom default branch name."""
         # Setup mock for git symbolic-ref command returning custom branch
         mock_proc = MagicMock()
+        mock_proc.returncode = 0
         mock_proc.stdout = "refs/remotes/upstream/develop"
         mock_subprocess_run.return_value = mock_proc
 
@@ -369,6 +374,7 @@ class TestShared(unittest.TestCase):
         """Test get_default_branch function handles output with whitespace."""
         # Setup mock for git symbolic-ref command with whitespace
         mock_proc = MagicMock()
+        mock_proc.returncode = 0
         mock_proc.stdout = "  refs/remotes/upstream/main\n  "
         mock_subprocess_run.return_value = mock_proc
 
@@ -381,44 +387,165 @@ class TestShared(unittest.TestCase):
     @patch("shared.subprocess.run")
     def test_get_default_branch_subprocess_error(self, mock_subprocess_run):
         """Test get_default_branch function when git command fails."""
-        # Setup mock to raise subprocess.CalledProcessError
-        import subprocess
+        # Setup mock to return non-zero returncode (since check=False is used)
+        mock_proc = MagicMock()
+        mock_proc.returncode = 1
+        mock_proc.stdout = ""
+        mock_subprocess_run.return_value = mock_proc
 
-        mock_subprocess_run.side_effect = subprocess.CalledProcessError(
-            1, "git symbolic-ref"
-        )
+        # Test - should return fallback "main" when command fails
+        result = get_default_branch("/path/to/repo")
 
-        # Test - should raise the exception
-        with self.assertRaises(subprocess.CalledProcessError) as context:
-            get_default_branch("/path/to/repo")
-
-        # Verify exception details
-        self.assertEqual(context.exception.returncode, 1)
-        self.assertEqual(context.exception.cmd, "git symbolic-ref")
+        # Verify fallback is returned
+        self.assertEqual(result, "main")
 
     @patch("shared.subprocess.run")
     def test_get_default_branch_no_upstream_remote(self, mock_subprocess_run):
         """Test get_default_branch function when upstream remote doesn't exist."""
-        # Setup mock to raise subprocess.CalledProcessError for missing upstream
-        import subprocess
+        # Setup mock to return non-zero returncode for missing upstream
+        mock_proc = MagicMock()
+        mock_proc.returncode = 128
+        mock_proc.stdout = ""
+        mock_subprocess_run.return_value = mock_proc
 
-        mock_subprocess_run.side_effect = subprocess.CalledProcessError(
-            128, "git symbolic-ref"
-        )
+        # Test - should return fallback "main" when upstream doesn't exist
+        result = get_default_branch("/path/to/missing-upstream")
 
-        # Test - should raise the exception
-        with self.assertRaises(subprocess.CalledProcessError) as context:
-            get_default_branch("/path/to/missing-upstream")
-
-        # Verify exception details
-        self.assertEqual(context.exception.returncode, 128)
-        self.assertEqual(context.exception.cmd, "git symbolic-ref")
+        # Verify fallback is returned
+        self.assertEqual(result, "main")
 
     def test_get_default_branch_function_exists(self):
         """Test that get_default_branch function exists and is callable."""
         # Basic check that the function was imported correctly
         self.assertTrue(callable(get_default_branch))
         self.assertEqual(get_default_branch.__name__, "get_default_branch")
+
+    @patch("shared.Github")
+    def test_github_rate_limit_wait_no_wait_needed(self, mock_github_class):
+        """Test github_rate_limit_wait when rate limit has remaining requests."""
+        config = {"github_token": "fake_token"}
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        mock_rate_limit = MagicMock()
+        mock_rate_limit.rate.remaining = 100  # Plenty of requests remaining
+        mock_github.get_rate_limit.return_value = mock_rate_limit
+
+        # Should return immediately without waiting
+        github_rate_limit_wait(config)
+
+        mock_github.get_rate_limit.assert_called_once()
+
+    @patch("shared.sleep")
+    @patch("shared.Github")
+    @patch("builtins.print")
+    def test_github_rate_limit_wait_waits_then_continues(
+        self, mock_print, mock_github_class, mock_sleep
+    ):
+        """Test github_rate_limit_wait waits when rate limited then continues."""
+        config = {"github_token": "fake_token"}
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        # First call: rate limit exhausted, second call: rate limit restored
+        mock_rate_limit_exhausted = MagicMock()
+        mock_rate_limit_exhausted.rate.remaining = 0
+
+        mock_rate_limit_restored = MagicMock()
+        mock_rate_limit_restored.rate.remaining = 100
+
+        mock_github.get_rate_limit.side_effect = [
+            mock_rate_limit_exhausted,
+            mock_rate_limit_restored,
+        ]
+
+        # Should wait once then continue
+        github_rate_limit_wait(config)
+
+        # Should have slept once with exponential backoff (1**2 = 1 second)
+        mock_sleep.assert_called_once_with(1)
+        self.assertEqual(mock_github.get_rate_limit.call_count, 2)
+
+    @patch("shared.sleep")
+    @patch("shared.Github")
+    @patch("builtins.print")
+    def test_github_rate_limit_wait_exponential_backoff(
+        self, mock_print, mock_github_class, mock_sleep
+    ):
+        """Test github_rate_limit_wait uses exponential backoff."""
+        config = {"github_token": "fake_token"}
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        # Rate limit exhausted for 3 attempts, then restored
+        mock_rate_limit_exhausted = MagicMock()
+        mock_rate_limit_exhausted.rate.remaining = 0
+
+        mock_rate_limit_restored = MagicMock()
+        mock_rate_limit_restored.rate.remaining = 100
+
+        mock_github.get_rate_limit.side_effect = [
+            mock_rate_limit_exhausted,  # Initial check
+            mock_rate_limit_exhausted,  # After first sleep
+            mock_rate_limit_exhausted,  # After second sleep
+            mock_rate_limit_restored,  # After third sleep
+        ]
+
+        github_rate_limit_wait(config)
+
+        # Should have slept 3 times with exponential backoff: 1, 4, 9 seconds
+        self.assertEqual(mock_sleep.call_count, 3)
+        mock_sleep.assert_any_call(1)  # 1**2
+        mock_sleep.assert_any_call(4)  # 2**2
+        mock_sleep.assert_any_call(9)  # 3**2
+
+    @patch("shared.sleep")
+    @patch("shared.Github")
+    @patch("builtins.print")
+    def test_github_rate_limit_wait_max_attempts_exceeded(
+        self, mock_print, mock_github_class, mock_sleep
+    ):
+        """Test github_rate_limit_wait raises error after max attempts."""
+        config = {"github_token": "fake_token"}
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        # Rate limit always exhausted
+        mock_rate_limit_exhausted = MagicMock()
+        mock_rate_limit_exhausted.rate.remaining = 0
+        mock_rate_limit_exhausted.rate.reset = "2025-01-01T00:00:00Z"
+
+        mock_github.get_rate_limit.return_value = mock_rate_limit_exhausted
+
+        # Should raise RateLimitExceededError after max_attempts
+        with self.assertRaises(RateLimitExceededError) as context:
+            github_rate_limit_wait(config, max_attempts=3)
+
+        self.assertIn("3 attempts", str(context.exception))
+
+        # Should have slept 3 times before raising
+        self.assertEqual(mock_sleep.call_count, 3)
+
+    @patch("shared.Github")
+    def test_github_rate_limit_wait_custom_max_attempts(self, mock_github_class):
+        """Test github_rate_limit_wait with custom max_attempts parameter."""
+        config = {"github_token": "fake_token"}
+
+        mock_github = MagicMock()
+        mock_github_class.return_value = mock_github
+
+        mock_rate_limit = MagicMock()
+        mock_rate_limit.rate.remaining = 100
+        mock_github.get_rate_limit.return_value = mock_rate_limit
+
+        # Should accept custom max_attempts parameter
+        github_rate_limit_wait(config, max_attempts=5)
+
+        mock_github.get_rate_limit.assert_called_once()
 
 
 if __name__ == "__main__":

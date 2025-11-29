@@ -212,12 +212,13 @@ class TestSync(unittest.TestCase):
         # Should only make 3 subprocess calls (no pull/push for non-default branch)
         self.assertEqual(mock_subprocess_run.call_count, 3)
 
+    @patch("shared.sync.github_rate_limit_wait")
     @patch("builtins.input")
     @patch("builtins.print")
     @patch("shared.sync.cprint")
     @patch("shared.sync.sys.exit")
     def test_create_user_forks_user_consent_yes(
-        self, mock_exit, mock_cprint, mock_print, mock_input
+        self, mock_exit, mock_cprint, mock_print, mock_input, mock_rate_limit_wait
     ):
         """Test create_user_forks when user consents to creating forks."""
         # Setup
@@ -291,12 +292,13 @@ class TestSync(unittest.TestCase):
         # Verify regular print was used for repo list
         self.assertTrue(mock_print.called)
 
+    @patch("shared.sync.github_rate_limit_wait")
     @patch("builtins.input")
     @patch("builtins.print")
     @patch("shared.sync.cprint")
     @patch("shared.sync.sys.exit")
     def test_create_user_forks_github_exception(
-        self, mock_exit, mock_cprint, mock_print, mock_input
+        self, mock_exit, mock_cprint, mock_print, mock_input, mock_rate_limit_wait
     ):
         """Test create_user_forks when GitHub API throws an exception."""
         # Setup
