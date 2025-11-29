@@ -22,10 +22,16 @@ from datetime import datetime
 from time import sleep
 from typing import Any, Dict, Optional, Tuple
 
-from github import Github, GithubException
+from github import (
+    BadCredentialsException,
+    Github,
+    GithubException,
+    RateLimitExceededException,
+)
 
 from . import (
     INTVDIR,
+    RateLimitExceededError,
     colors,
     cprint,
     get_clones,
@@ -81,20 +87,79 @@ def open_pull_request(
         cprint(f"Pull request opened: {pr.html_url}", colors.OKGREEN, 2)
         # Proactively avoid rate limiting
         sleep(3)
+
+    except RateLimitExceededError as err:
+        cprint(
+            f"ERROR: {err}",
+            colors.FAIL,
+            2,
+        )
+        raise
+
+    except RateLimitExceededException:
+        cprint(
+            "ERROR: GitHub API rate limit exceeded during pull request creation.",
+            colors.FAIL,
+            2,
+        )
+        cprint(f"Rate limit status: {g.get_rate_limit().core}", colors.FAIL, 2)
+        raise
+
+    except BadCredentialsException as err:
+        cprint(
+            "ERROR: Authentication failed. Please check your GitHub token.",
+            colors.FAIL,
+            2,
+        )
+        cprint(f"Details: {err.data}", colors.FAIL, 2)
+        raise
+
     except GithubException as err:
-        if err.status == 422:
+        if err.status == 403:
+            error_message = err.data.get("message", "") if err.data else ""
+            if "not accessible" in error_message.lower():
+                cprint(
+                    "ERROR: Permission denied. Your GitHub token does not have access to this resource.",
+                    colors.FAIL,
+                    2,
+                )
+                cprint(f"Message: {error_message}", colors.FAIL, 2)
+                if err.data and "documentation_url" in err.data:
+                    cprint(
+                        f"Documentation: {err.data['documentation_url']}",
+                        colors.FAIL,
+                        2,
+                    )
+                cprint(
+                    "Please ensure your personal access token has the required permissions "
+                    "(e.g., 'public_repo' or 'repo').",
+                    colors.FAIL,
+                    2,
+                )
+                raise
+            else:
+                cprint(
+                    f"ERROR: Access forbidden (403). Details: {err.data}",
+                    colors.FAIL,
+                    2,
+                )
+                raise
+
+        elif err.status == 422:
             cprint(
                 "WARNING: A pull request may already exist for this branch. Skipping.",
                 colors.WARNING,
                 2,
             )
+            pr = None
+
         else:
             cprint(
                 f"WARNING: Unable to open pull request. Details: {err.status} - {err.data}",
                 colors.WARNING,
                 2,
             )
-        pr = None
+            pr = None
 
     return pr
 
