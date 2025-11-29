@@ -412,10 +412,12 @@ def get_default_branch(clone_path: str) -> str:
         "symbolic-ref",
         "refs/remotes/upstream/HEAD",
     ]
-    proc = subprocess.run(upstream_cmd, check=True, capture_output=True, text=True)
+    proc = subprocess.run(upstream_cmd, check=False, capture_output=True, text=True)
 
     # Output format: "refs/remotes/upstream/main" -> extract "main"
-    return proc.stdout.strip().split("/")[-1]
+    if proc.returncode == 0:
+        return proc.stdout.strip().split("/")[-1]
+    return "main"  # Fallback when upstream HEAD isn't set
 
 
 def get_index_info(clones: List[str]) -> Dict[str, List[str]]:
