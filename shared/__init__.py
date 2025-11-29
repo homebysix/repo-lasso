@@ -208,6 +208,12 @@ class colors:
     ENDC = "\033[0m"
 
 
+class RateLimitExceededError(Exception):
+    """Raised when GitHub API rate limit is exceeded after max retries."""
+
+    pass
+
+
 def cprint(msg: str, color_class: str, indent_level: int = 0) -> None:
     """Function for printing colorized output."""
 
@@ -437,17 +443,31 @@ def get_index_info(clones: List[str]) -> Dict[str, List[str]]:
     return index_info
 
 
-def github_rate_limit_wait(config: Dict[str, Any]) -> None:
-    """Waits for the GitHub API to accept requests."""
+def github_rate_limit_wait(config: Dict[str, Any], max_attempts: int = 10) -> None:
+    """Waits for the GitHub API to accept requests.
+
+    Args:
+        config: Configuration dictionary containing github_token.
+        max_attempts: Maximum number of retry attempts before raising an error.
+
+    Raises:
+        RateLimitExceededError: If rate limit is still exceeded after max_attempts.
+    """
 
     g = Github(config["github_token"])
 
     attempt = 1
     rate_limit = g.get_rate_limit().rate
     while rate_limit.remaining == 0:
+        if attempt > max_attempts:
+            raise RateLimitExceededError(
+                f"GitHub API rate limit exceeded after {max_attempts} attempts. "
+                f"Rate limit resets at {rate_limit.reset}."
+            )
         sleep_time = attempt**2
         cprint(
-            f"WARNING: Rate limited. Waiting {sleep_time} seconds before continuing.",
+            f"WARNING: Rate limited. Waiting {sleep_time} seconds before continuing "
+            f"(attempt {attempt} of {max_attempts}).",
             colors.WARNING,
             2,
         )
