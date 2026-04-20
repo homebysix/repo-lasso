@@ -80,6 +80,52 @@ def create_user_forks(repos_to_fork, config):
             cprint(err, colors.WARNING, 2)
 
 
+_github_ssh_available_cache = None
+
+
+def github_ssh_available():
+    """Return True if `git@github.com` SSH auth works in this environment.
+
+    Probes once with `ssh -T` and caches the result. GitHub returns exit 1
+    with a "successfully authenticated" banner on success and refuses a
+    shell; anything else (permission denied, timeout, missing ssh) means
+    SSH isn't usable here and callers should fall back to HTTPS.
+    """
+    global _github_ssh_available_cache
+    if _github_ssh_available_cache is not None:
+        return _github_ssh_available_cache
+    try:
+        result = subprocess.run(
+            [
+                "ssh",
+                "-T",
+                "-o",
+                "BatchMode=yes",
+                "-o",
+                "ConnectTimeout=5",
+                "-o",
+                "StrictHostKeyChecking=accept-new",
+                "git@github.com",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        output = (result.stderr or "") + (result.stdout or "")
+        available = "successfully authenticated" in output
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        available = False
+    _github_ssh_available_cache = available
+    transport = "SSH" if available else "HTTPS"
+    cprint(f"GitHub transport for clone/remote URLs: {transport}.", colors.OKBLUE)
+    return available
+
+
+def repo_origin_url(repo):
+    """Pick SSH or HTTPS URL for a PyGithub repo based on auth availability."""
+    return repo.ssh_url if github_ssh_available() else repo.clone_url
+
+
 def create_clones(forks_to_clone, config):
     """Create clones for any forks not already cloned locally."""
 
@@ -109,7 +155,7 @@ def create_clones(forks_to_clone, config):
             f"({idx + 1} of {len(forks_to_clone)})..."
         )
         clone_path = os.path.join(REPODIR, config["github_org"], fork.name)
-        clone_cmd = ["git", "clone", "--depth=1", fork.ssh_url, clone_path]
+        clone_cmd = ["git", "clone", "--depth=1", repo_origin_url(fork), clone_path]
         _ = subprocess.run(clone_cmd, check=True, capture_output=True, text=True)
         remote_cmd = [
             "git",
@@ -118,7 +164,7 @@ def create_clones(forks_to_clone, config):
             "remote",
             "add",
             "upstream",
-            fork.parent.ssh_url,
+            repo_origin_url(fork.parent),
         ]
         _ = subprocess.run(remote_cmd, check=True, capture_output=True, text=True)
 
