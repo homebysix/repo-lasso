@@ -129,15 +129,18 @@ def prep(version: str) -> None:
         *sections[1:],
     ]
 
-    prior_version = next(
-        (m.group(1) for h, _ in sections[1:] if (m := RELEASED_SECTION_RE.match(h))),
-        None,
-    )
+    prior_version = None
+    for header_line, _ in sections[1:]:
+        match = RELEASED_SECTION_RE.match(header_line)
+        if match:
+            prior_version = match.group(1)
+            break
     if prior_version is None:
         sys.exit("Could not find a prior released version in CHANGELOG.md")
 
     footer_lines = footer.splitlines() if footer else []
-    kept = [line for line in footer_lines if not line.startswith("[Unreleased]:")]
+    drop_prefixes = ("[Unreleased]:", f"[{version}]:")
+    kept = [line for line in footer_lines if not line.startswith(drop_prefixes)]
     new_footer_lines = [
         f"[Unreleased]: {COMPARE_URL}/v{version}...HEAD",
         f"[{version}]: {COMPARE_URL}/v{prior_version}...v{version}",
