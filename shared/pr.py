@@ -14,18 +14,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import json
 import os
 import subprocess
 from datetime import datetime
 from time import sleep
+from typing import Any, Dict, Optional, Tuple
 
-from github import Github, GithubException
+from github import (
+    BadCredentialsException,
+    Github,
+    GithubException,
+    RateLimitExceededException,
+)
 
-from . import INTVDIR, colors, cprint, get_clones
+from . import (
+    INTVDIR,
+    RateLimitExceededError,
+    colors,
+    cprint,
+    get_clones,
+    get_default_branch,
+    github_rate_limit_wait,
+)
 
 
-def load_pr_template(template_path):
+def load_pr_template(template_path: str) -> Tuple[str, str]:
     """Given a path to a markdown file, load the file as a pull request template."""
 
     with open(template_path, encoding="utf-8") as infile:
@@ -37,7 +52,9 @@ def load_pr_template(template_path):
     return title, body
 
 
-def open_pull_request(clone, base, head, args, config):
+def open_pull_request(
+    clone: str, base: str, head: str, args: argparse.Namespace, config: Dict[str, Any]
+) -> Optional[Any]:
     """For an eligible repo, open a pull request on GitHub."""
 
     # Object for communicating with GitHub API
@@ -59,6 +76,8 @@ def open_pull_request(clone, base, head, args, config):
     org = g.get_organization(config["github_org"])
     upstream_repo = org.get_repo(os.path.split(clone)[1])
     try:
+        github_rate_limit_wait(config)
+
         pr = upstream_repo.create_pull(
             base=base,
             head=f"{g.get_user().login}:{head}",
@@ -68,33 +87,84 @@ def open_pull_request(clone, base, head, args, config):
         cprint(f"Pull request opened: {pr.html_url}", colors.OKGREEN, 2)
         # Proactively avoid rate limiting
         sleep(3)
+
+    except RateLimitExceededError as err:
+        cprint(
+            f"ERROR: {err}",
+            colors.FAIL,
+            2,
+        )
+        raise
+
+    except RateLimitExceededException:
+        cprint(
+            "ERROR: GitHub API rate limit exceeded during pull request creation.",
+            colors.FAIL,
+            2,
+        )
+        cprint(f"Rate limit status: {g.get_rate_limit().core}", colors.FAIL, 2)
+        raise
+
+    except BadCredentialsException as err:
+        cprint(
+            "ERROR: Authentication failed. Please check your GitHub token.",
+            colors.FAIL,
+            2,
+        )
+        cprint(f"Details: {err.data}", colors.FAIL, 2)
+        raise
+
     except GithubException as err:
         if err.status == 403:
-            cprint(
-                "WARNING: Rate limited. Waiting 60 seconds before continuing.",
-                colors.WARNING,
-                2,
-            )
-            cprint(g.get_rate_limit(), colors.WARNING, 2)
-            sleep(60)
+            error_message = err.data.get("message", "") if err.data else ""
+            if "not accessible" in error_message.lower():
+                cprint(
+                    "ERROR: Permission denied. Your GitHub token does not have access to this resource.",
+                    colors.FAIL,
+                    2,
+                )
+                cprint(f"Message: {error_message}", colors.FAIL, 2)
+                if err.data and "documentation_url" in err.data:
+                    cprint(
+                        f"Documentation: {err.data['documentation_url']}",
+                        colors.FAIL,
+                        2,
+                    )
+                cprint(
+                    "Please ensure your personal access token has the required permissions "
+                    "(e.g., 'public_repo' or 'repo').",
+                    colors.FAIL,
+                    2,
+                )
+                raise
+            else:
+                cprint(
+                    f"ERROR: Access forbidden (403). Details: {err.data}",
+                    colors.FAIL,
+                    2,
+                )
+                raise
+
         elif err.status == 422:
             cprint(
                 "WARNING: A pull request may already exist for this branch. Skipping.",
                 colors.WARNING,
                 2,
             )
+            pr = None
+
         else:
             cprint(
                 f"WARNING: Unable to open pull request. Details: {err.status} - {err.data}",
                 colors.WARNING,
                 2,
             )
-        pr = None
+            pr = None
 
     return pr
 
 
-def log_initiative(pr, branch, config):
+def log_initiative(pr: Any, branch: str, config: Dict[str, Any]) -> None:
     """Update the json file that tracks each initiative."""
 
     if not os.path.isdir(INTVDIR):
@@ -122,7 +192,7 @@ def log_initiative(pr, branch, config):
         outfile.write(json.dumps(intv_data, indent=4))
 
 
-def main(args, config):
+def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     """Main function for pr verb."""
 
     cprint("\nPULL REQUESTS", colors.OKBLUE)
@@ -133,11 +203,8 @@ def main(args, config):
             f"{os.path.relpath(clone)} ({idx + 1} of {len(clones)})..."
         )
 
-        # TODO: Determine this based on GitHub API.
-        branches_cmd = ["git", "-C", clone, "branch"]
-        proc = subprocess.run(branches_cmd, check=True, capture_output=True, text=True)
-        branches = [x.strip() for x in proc.stdout.replace("*", "").split("\n")]
-        default_branch = "main" if "main" in branches else "master"
+        # Get the actual default branch for this repository
+        default_branch = get_default_branch(clone)
 
         curr_branch_cmd = ["git", "-C", clone, "branch", "--show-current"]
         proc = subprocess.run(

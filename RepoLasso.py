@@ -38,7 +38,7 @@ from shared import (  # noqa: F401
 )
 
 
-def main():
+def main() -> None:
     """Main process."""
 
     start = time()

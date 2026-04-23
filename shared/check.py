@@ -14,16 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import json
 import os
 import subprocess
 import sys
 from multiprocessing.pool import ThreadPool
+from typing import Any, Dict, Optional
 
 from . import INTVDIR, colors, cprint, get_clones
 
 
-def summarize(results):
+def summarize(results: Dict[str, Dict[str, Dict[str, Any]]]) -> None:
     """Print summary of check results."""
     c_err = 0
     f_err = 0
@@ -46,7 +48,9 @@ def summarize(results):
     print(f"\n{f_err} files failed checks across {c_err} clones.")
 
 
-def check_repo(clone, args, idx, total):
+def check_repo(
+    clone: str, args: argparse.Namespace, idx: int, total: int
+) -> Optional[Dict[str, Dict[str, Dict[str, Any]]]]:
     """Checks a single repository."""
 
     clone = os.path.relpath(clone)
@@ -63,10 +67,10 @@ def check_repo(clone, args, idx, total):
     ]
     proc = subprocess.run(status_cmd, check=True, capture_output=True, text=True)
     if not proc.stdout:
-        return
+        return None
 
     c_files = [x[2:].strip() for x in proc.stdout.strip().split("\n")]
-    result = {}
+    result: Dict[str, Dict[str, Any]] = {}
 
     for fidx, c_file in enumerate(c_files):
         print(f"Checking {c_file} ({fidx + 1} of {len(c_files)} files in {clone})...")
@@ -80,6 +84,7 @@ def check_repo(clone, args, idx, total):
                 [args.script, os.path.relpath(clone), c_file, str(i)],
                 check=False,
                 capture_output=True,
+                text=True,
             )
             checks_before.append(proc.returncode)
 
@@ -92,6 +97,7 @@ def check_repo(clone, args, idx, total):
                 [args.script, os.path.relpath(clone), c_file, str(i)],
                 check=False,
                 capture_output=True,
+                text=True,
             )
             checks_after.append(proc.returncode)
 
@@ -105,19 +111,19 @@ def check_repo(clone, args, idx, total):
             if args.revert:
                 # Revert changes to this file
                 revert_cmd = ["git", "-C", clone, "checkout", c_file]
-                proc = subprocess.run(revert_cmd, check=False)
+                proc = subprocess.run(revert_cmd, check=False, text=True)
 
     return {clone: result}
 
 
-def parallelize(args):
+def parallelize(args: Any) -> Optional[Dict[str, Dict[str, Dict[str, Any]]]]:
     """Helper function that allows us to compact needed arguments and pass them
     to the check_repo() function."""
 
     return check_repo(*args)
 
 
-def main(args, config):
+def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     """Main function for check verb."""
     cprint("\nCHECK", colors.OKBLUE)
 
@@ -144,7 +150,7 @@ def main(args, config):
     #     exit(0)
 
     clones = get_clones(config)
-    results = {}
+    results: Dict[str, Dict[str, Dict[str, Any]]] = {}
 
     # Trap Control-C and display summary before exit.
     try:

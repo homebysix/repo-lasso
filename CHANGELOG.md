@@ -6,7 +6,23 @@ All notable changes to this project will be documented in this file. This projec
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Concurrent processing for `report` verb — significantly faster for organizations with a large number of repos.
+- More information displayed during initial fork retrieval.
+
+### Fixed
+
+- Fixed issue that was causing `report` to skip updating existing pull requests.
+- More graceful handling of Git fetch, pull, and push errors.
+- Greatly improved unit test coverage.
+- Better determination of default branch names.
+
+### Changed
+
+- Changed from https to ssh for cloning operations.
+- Only fetch default branches on sync, to avoid issues with case-sensitive branch names.
+- Python function typing to help Repo Lasso developers and contributors.
 
 ## [1.2.0] - 2024-06-23
 

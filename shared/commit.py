@@ -14,13 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 import subprocess
+from typing import Any, Dict
 
 from . import colors, cprint, get_clones
 
 
-def main(args, config):
+def main(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     """Main function for commit verb."""
     cprint("\nCOMMIT", colors.OKBLUE)
 
