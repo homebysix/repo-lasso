@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file. This projec
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.3.0] - 2026-04-23
+
 ### Added
 
 - Concurrent processing for `report` verb — significantly faster for organizations with a large number of repos.
@@ -54,6 +58,7 @@ All notable changes to this project will be documented in this file. This projec
 
 - Initial public release of Repo Lasso.
 
-[Unreleased]: https://github.com/homebysix/repo-lasso/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/homebysix/repo-lasso/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/homebysix/repo-lasso/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/homebysix/repo-lasso/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/homebysix/repo-lasso/compare/v1.0.0...v1.1.0
