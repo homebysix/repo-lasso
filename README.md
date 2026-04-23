@@ -2,6 +2,10 @@
 
 # Repo Lasso
 
+[![Release](https://img.shields.io/github/v/release/homebysix/repo-lasso?sort=semver)](https://github.com/homebysix/repo-lasso/releases/latest)
+[![License](https://img.shields.io/github/license/homebysix/repo-lasso)](LICENSE)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/homebysix/repo-lasso/dev.svg)](https://results.pre-commit.ci/latest/github/homebysix/repo-lasso/dev)
+
 **Repo Lasso is a tool that enables GitHub organization contributors/maintainers to submit nearly-identical pull requests in bulk across multiple organization repositories at once.** The changes can be anything from complex refactoring to simple typo fixes. Repo Lasso takes care of the per-repo Git and GitHub actions seamlessly so you can focus on the code improvements.
 
 The name refers to the tool used by ranchers to catch stray livestock and guide them back to safety. But it's also a nod to [Ted Lasso](https://tv.apple.com/us/show/ted-lasso/umc.cmc.vtoh0mn0xn7t3c643xqonfzy), and the spirit of driving a team to greatness through collaboration and heartfelt feedback rather than by brute force.
