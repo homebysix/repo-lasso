@@ -16,6 +16,7 @@
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 from multiprocessing.pool import ThreadPool
@@ -122,56 +123,72 @@ def create_clones(forks_to_clone: List[Any], config: Dict[str, Any]) -> None:
             f"({idx + 1} of {len(forks_to_clone)})..."
         )
         clone_path = os.path.join(REPODIR, config["github_org"], fork.name)
-        clone_cmd = ["git", "clone", "--depth=1", fork.clone_url, clone_path]
-        _ = subprocess.run(clone_cmd, check=True, capture_output=True, text=True)
-        remote_cmd = [
-            "git",
-            "-C",
-            clone_path,
-            "remote",
-            "add",
-            "upstream",
-            fork.parent.clone_url,
-        ]
-        _ = subprocess.run(remote_cmd, check=True, capture_output=True, text=True)
+        try:
+            subprocess.run(
+                ["git", "clone", "--depth=1", fork.clone_url, clone_path],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    clone_path,
+                    "remote",
+                    "add",
+                    "upstream",
+                    fork.parent.clone_url,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
 
-        # Get the default branch from the upstream repository
-        upstream_default_branch = fork.parent.default_branch
+            upstream_default_branch = fork.parent.default_branch
 
-        # Fetch only the default branch from upstream to avoid issues with
-        # case-insensitive filesystems and conflicting branch names
-        fetch_upstream_cmd = [
-            "git",
-            "-C",
-            clone_path,
-            "fetch",
-            "upstream",
-            upstream_default_branch,
-        ]
-        _ = subprocess.run(
-            fetch_upstream_cmd, check=True, capture_output=True, text=True
-        )
+            # Fetch only the default branch to avoid issues with
+            # case-insensitive filesystems and conflicting branch names
+            subprocess.run(
+                ["git", "-C", clone_path, "fetch", "upstream", upstream_default_branch],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    clone_path,
+                    "remote",
+                    "set-head",
+                    "upstream",
+                    upstream_default_branch,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
 
-        # Set upstream HEAD to track the default branch
-        set_upstream_head_cmd = [
-            "git",
-            "-C",
-            clone_path,
-            "remote",
-            "set-head",
-            "upstream",
-            upstream_default_branch,
-        ]
-        _ = subprocess.run(
-            set_upstream_head_cmd, check=True, capture_output=True, text=True
-        )
-
-        # If repo has pre-commit configured, install the hooks
-        if os.path.isfile(os.path.join(clone_path, ".pre-commit-config.yaml")):
-            try:
-                _ = subprocess.run(["pre-commit", "install"], check=False)
-            except FileNotFoundError:
-                pass
+            if os.path.isfile(os.path.join(clone_path, ".pre-commit-config.yaml")):
+                try:
+                    subprocess.run(
+                        ["pre-commit", "install"],
+                        cwd=clone_path,
+                        check=False,
+                    )
+                except FileNotFoundError:
+                    pass
+        except subprocess.CalledProcessError as e:
+            cprint(
+                f"Failed to set up clone for "
+                f"{config['github_org']}/{fork.name}: {e}",
+                colors.WARNING,
+            )
+            if e.stderr:
+                cprint(f"  Git error: {e.stderr.strip()}", colors.WARNING)
+            shutil.rmtree(clone_path, ignore_errors=True)
+            continue
 
 
 def sync_clone(
