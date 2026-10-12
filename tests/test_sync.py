@@ -177,7 +177,7 @@ class TestSync(unittest.TestCase):
         self.assertEqual(mock_subprocess_run.call_count, 3)
 
         # Should print failure message
-        cprint_calls = [call for call in mock_cprint.call_args_list]
+        cprint_calls = [*mock_cprint.call_args_list]
         self.assertTrue(
             any("Failed to fetch upstream" in str(call) for call in cprint_calls)
         )
@@ -281,7 +281,7 @@ class TestSync(unittest.TestCase):
         mock_repo.create_fork.assert_not_called()
 
         # Verify error message was printed
-        cprint_calls = [call for call in mock_cprint.call_args_list]
+        cprint_calls = [*mock_cprint.call_args_list]
         self.assertTrue(
             any(
                 "ERROR: Did not consent to fork repos" in str(call)
@@ -325,7 +325,7 @@ class TestSync(unittest.TestCase):
         mock_exit.assert_not_called()
 
         # Verify warning message was printed for failed fork
-        cprint_calls = [call for call in mock_cprint.call_args_list]
+        cprint_calls = [*mock_cprint.call_args_list]
         self.assertTrue(
             any(
                 "Attempt to fork repo testorg/repo1 failed" in str(call)
@@ -452,7 +452,7 @@ class TestSync(unittest.TestCase):
         mock_exit.assert_called_once_with(0)
 
         # Verify error message was printed
-        cprint_calls = [call for call in mock_cprint.call_args_list]
+        cprint_calls = [*mock_cprint.call_args_list]
         self.assertTrue(
             any(
                 "ERROR: Did not consent to clone forks" in str(call)

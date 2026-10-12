@@ -79,7 +79,7 @@ class TestStatus(unittest.TestCase):
         )
 
         # Check cprint calls
-        cprint_calls = [call for call in mock_cprint.call_args_list]
+        cprint_calls = [*mock_cprint.call_args_list]
         self.assertTrue(
             any(
                 "All clones are on the default branch" in str(call)
@@ -113,7 +113,7 @@ class TestStatus(unittest.TestCase):
             status.main(self.args, self.config)
 
         # Check cprint calls for same branch message
-        cprint_calls = [call for call in mock_cprint.call_args_list]
+        cprint_calls = [*mock_cprint.call_args_list]
         self.assertTrue(
             any(
                 "All clones are on the feature-branch branch" in str(call)
@@ -155,7 +155,7 @@ class TestStatus(unittest.TestCase):
         status.main(self.args, self.config)
 
         # Check warning message
-        cprint_calls = [call for call in mock_cprint.call_args_list]
+        cprint_calls = [*mock_cprint.call_args_list]
         self.assertTrue(
             any(
                 "WARNING: Clones are not all on the same branch" in str(call)
@@ -205,7 +205,7 @@ class TestStatus(unittest.TestCase):
         status.main(self.args, self.config)
 
         # Check warning message about uncommitted changes
-        cprint_calls = [call for call in mock_cprint.call_args_list]
+        cprint_calls = [*mock_cprint.call_args_list]
         self.assertTrue(
             any(
                 "WARNING: Some clones have uncommitted changes" in str(call)
@@ -241,7 +241,7 @@ class TestStatus(unittest.TestCase):
             status.main(self.args, self.config)
 
         # Check clean message
-        cprint_calls = [call for call in mock_cprint.call_args_list]
+        cprint_calls = [*mock_cprint.call_args_list]
         self.assertTrue(
             any("All clones are clean" in str(call) for call in cprint_calls)
         )
